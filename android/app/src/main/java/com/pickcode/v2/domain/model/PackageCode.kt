@@ -1,5 +1,8 @@
 package com.pickcode.v2.domain.model
 
+import androidx.compose.runtime.Immutable
+
+@Immutable
 data class PackageCode(
     val id: Long = 0,
     val code: String,

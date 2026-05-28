@@ -8,6 +8,8 @@ import com.pickcode.v2.data.repository.MatchRuleRepository
 import com.pickcode.v2.data.repository.PackageCodeRepository
 import com.pickcode.v2.domain.engine.MatchEngine
 import com.pickcode.v2.domain.engine.SmsReader
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.pickcode.v2.domain.model.PackageCode
 import com.pickcode.v2.ui.util.LogBuffer
 import com.pickcode.v2.ui.util.formatDateChinese
@@ -19,12 +21,17 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 
+@Immutable
 sealed interface PickupListItem {
+    @Immutable
     data class DateHeader(val date: String, val pendingCount: Int) : PickupListItem
+    @Immutable
     data class AddressHeader(val date: String, val address: String) : PickupListItem
+    @Immutable
     data class Code(val item: PackageCode) : PickupListItem
 }
 
+@Stable
 data class PickupListUiState(
     val codes: List<PackageCode> = emptyList(),
     val flatItems: List<PickupListItem> = emptyList(),
