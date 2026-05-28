@@ -19,10 +19,15 @@ import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
 
+sealed interface PickupListItem {
+    data class DateHeader(val date: String, val pendingCount: Int) : PickupListItem
+    data class AddressHeader(val address: String) : PickupListItem
+    data class Code(val item: PackageCode) : PickupListItem
+}
+
 data class PickupListUiState(
     val codes: List<PackageCode> = emptyList(),
-    val groupedCodes: Map<String, Map<String, List<PackageCode>>> = emptyMap(),
-    val pendingCountByDate: Map<String, Int> = emptyMap(),
+    val flatItems: List<PickupListItem> = emptyList(),
     val isLoading: Boolean = false
 )
 
@@ -40,26 +45,30 @@ class PickupListViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             repository.getAll().collect { codes ->
-                val grouped = groupCodes(codes)
-                val pendingMap = codes
-                    .groupBy { formatDateChinese(it.date) }
-                    .mapValues { (_, items) -> items.count { !it.isPicked } }
                 _uiState.value = PickupListUiState(
                     codes = codes,
-                    groupedCodes = grouped,
-                    pendingCountByDate = pendingMap
+                    flatItems = buildFlatItems(codes)
                 )
             }
         }
     }
 
-    private fun groupCodes(codes: List<PackageCode>): Map<String, Map<String, List<PackageCode>>> {
-        return codes
-            .groupBy { formatDateChinese(it.date) }
-            .mapValues { (_, items) ->
-                items.groupBy { it.address.ifEmpty { "未知地址" } }
-            }
+    private fun buildFlatItems(codes: List<PackageCode>): List<PickupListItem> {
+        val byDate = codes.groupBy { formatDateChinese(it.date) }
             .toSortedMap(compareByDescending { it })
+        val result = mutableListOf<PickupListItem>()
+        for ((date, dateCodes) in byDate) {
+            val pendingCount = dateCodes.count { !it.isPicked }
+            result.add(PickupListItem.DateHeader(date, pendingCount))
+            val byAddress = dateCodes.groupBy { it.address.ifEmpty { "未知地址" } }
+            for ((address, addressCodes) in byAddress) {
+                result.add(PickupListItem.AddressHeader(address))
+                for (code in addressCodes) {
+                    result.add(PickupListItem.Code(code))
+                }
+            }
+        }
+        return result
     }
 
     fun addCode(codeText: String) {

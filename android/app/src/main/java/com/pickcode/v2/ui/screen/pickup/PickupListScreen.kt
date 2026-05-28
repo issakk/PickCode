@@ -5,8 +5,6 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,7 +16,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -30,7 +27,6 @@ import com.pickcode.v2.domain.model.PackageCode
 import com.pickcode.v2.navigation.Routes
 import com.pickcode.v2.ui.components.CodeCard
 import com.pickcode.v2.ui.components.GradientHeader
-import com.pickcode.v2.ui.util.formatDateChinese
 
 @Composable
 fun PickupListScreen(
@@ -74,77 +70,79 @@ fun PickupListScreen(
             }
         }
 
-        // Loading indicator
         if (uiState.isLoading) {
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
         }
 
-        // Grouped list
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            uiState.groupedCodes.forEach { (dateStr, addressGroups) ->
-                // Date header
-                item(key = "header_$dateStr") {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = dateStr,
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = colorScheme.onSurfaceVariant,
-                            letterSpacing = 0.5.sp,
-                            modifier = Modifier.weight(1f)
-                        )
-                        val pendingCount = uiState.pendingCountByDate[dateStr] ?: 0
-                        if (pendingCount > 0) {
-                            Surface(
-                                shape = RoundedCornerShape(12.dp),
-                                color = colorScheme.primary.copy(alpha = 0.1f)
-                            ) {
-                                Text(
-                                    text = "$pendingCount 个待取",
-                                    fontSize = 11.sp,
-                                    color = colorScheme.primary,
-                                    fontWeight = FontWeight.Medium,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+            items(
+                items = uiState.flatItems,
+                key = { item ->
+                    when (item) {
+                        is PickupListItem.DateHeader -> "date_${item.date}"
+                        is PickupListItem.AddressHeader -> "addr_${item.address}"
+                        is PickupListItem.Code -> "code_${item.item.id}"
+                    }
+                }
+            ) { item ->
+                when (item) {
+                    is PickupListItem.DateHeader -> {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = item.date,
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = colorScheme.onSurfaceVariant,
+                                letterSpacing = 0.5.sp,
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (item.pendingCount > 0) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = colorScheme.primary.copy(alpha = 0.1f)
+                                ) {
+                                    Text(
+                                        text = "${item.pendingCount} 个待取",
+                                        fontSize = 11.sp,
+                                        color = colorScheme.primary,
+                                        fontWeight = FontWeight.Medium,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                            IconButton(onClick = { showDateDeleteDialog = item.date }, modifier = Modifier.size(32.dp)) {
+                                Icon(
+                                    Icons.Outlined.DeleteSweep,
+                                    contentDescription = "删除当日",
+                                    tint = colorScheme.error,
+                                    modifier = Modifier.size(16.dp)
                                 )
                             }
                         }
-                        IconButton(onClick = { showDateDeleteDialog = dateStr }, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                Icons.Outlined.DeleteSweep,
-                                contentDescription = "删除当日",
-                                tint = colorScheme.error,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
                     }
-                }
-
-                // Address groups
-                addressGroups.forEach { (address, codes) ->
-                    item(key = "addr_${dateStr}_$address") {
+                    is PickupListItem.AddressHeader -> {
                         Text(
-                            text = address,
+                            text = item.address,
                             fontSize = 13.sp,
                             color = colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                         )
                     }
-
-                    items(codes, key = { it.id }) { code ->
+                    is PickupListItem.Code -> {
                         CodeCard(
-                            item = code,
-                            onTogglePicked = { viewModel.togglePicked(code) },
-                            onEdit = { rootNavController.navigate(Routes.editCode(code.id)) },
-                            onDelete = { showDeleteDialog = code }
+                            item = item.item,
+                            onTogglePicked = { viewModel.togglePicked(item.item) },
+                            onEdit = { rootNavController.navigate(Routes.editCode(item.item.id)) },
+                            onDelete = { showDeleteDialog = item.item }
                         )
                     }
                 }

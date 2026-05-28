@@ -10,22 +10,26 @@ data class LogEntry(val tag: String, val message: String, val timestamp: Long = 
 object LogBuffer {
     private const val MAX_SIZE = 500
     private val buffer = ArrayDeque<LogEntry>(MAX_SIZE)
-    private val _logs = MutableStateFlow<List<LogEntry>>(emptyList())
-    val logs: StateFlow<List<LogEntry>> = _logs.asStateFlow()
+
+    // Version counter — increments on each mutation
+    private val _version = MutableStateFlow(0)
+    val version: StateFlow<Int> = _version.asStateFlow()
+
+    fun snapshot(): List<LogEntry> = synchronized(buffer) { buffer.toList() }
 
     fun d(tag: String, message: String) {
         Log.d(tag, message)
         synchronized(buffer) {
             if (buffer.size >= MAX_SIZE) buffer.removeFirst()
             buffer.addLast(LogEntry(tag, message))
-            _logs.value = buffer.toList()
+            _version.value++
         }
     }
 
     fun clear() {
         synchronized(buffer) {
             buffer.clear()
-            _logs.value = emptyList()
+            _version.value++
         }
     }
 }

@@ -22,12 +22,12 @@ import java.util.*
 
 @Composable
 fun LogsScreen() {
-    val logs by LogBuffer.logs.collectAsState()
+    val version by LogBuffer.version.collectAsState()
+    val logs = remember(version) { LogBuffer.snapshot() }
     val listState = rememberLazyListState()
-    val timeFormat = remember { SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()) }
     val colorScheme = MaterialTheme.colorScheme
 
-    LaunchedEffect(logs.size) {
+    LaunchedEffect(version) {
         if (logs.isNotEmpty() && listState.firstVisibleItemIndex >= logs.size - 5) {
             listState.animateScrollToItem(logs.size - 1)
         }
@@ -51,39 +51,53 @@ fun LogsScreen() {
                 contentPadding = PaddingValues(8.dp),
                 verticalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                items(logs.size) { index ->
+                items(
+                    count = logs.size,
+                    key = { it }
+                ) { index ->
                     val entry = logs[index]
-                    val time = timeFormat.format(Date(entry.timestamp))
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 6.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = time,
-                            fontSize = 10.sp,
-                            color = colorScheme.outline,
-                            fontFamily = FontFamily.Monospace,
-                            modifier = Modifier.width(75.dp)
-                        )
-                        Text(
-                            text = entry.tag,
-                            fontSize = 10.sp,
-                            color = colorScheme.primary,
-                            fontFamily = FontFamily.Monospace,
-                            modifier = Modifier.width(60.dp)
-                        )
-                        Text(
-                            text = entry.message,
-                            fontSize = 10.sp,
-                            color = colorScheme.onSurface,
-                            fontFamily = FontFamily.Monospace,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    LogItem(entry = entry)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun LogItem(
+    entry: com.pickcode.v2.ui.util.LogEntry,
+    modifier: Modifier = Modifier
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    val time = remember(entry.timestamp) {
+        SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(entry.timestamp))
+    }
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
+            .padding(horizontal = 6.dp, vertical = 3.dp)
+    ) {
+        Text(
+            text = time,
+            fontSize = 10.sp,
+            color = colorScheme.outline,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.width(75.dp)
+        )
+        Text(
+            text = entry.tag,
+            fontSize = 10.sp,
+            color = colorScheme.primary,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.width(60.dp)
+        )
+        Text(
+            text = entry.message,
+            fontSize = 10.sp,
+            color = colorScheme.onSurface,
+            fontFamily = FontFamily.Monospace,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
