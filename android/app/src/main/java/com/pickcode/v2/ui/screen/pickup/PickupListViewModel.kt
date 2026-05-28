@@ -21,7 +21,7 @@ import javax.inject.Inject
 
 sealed interface PickupListItem {
     data class DateHeader(val date: String, val pendingCount: Int) : PickupListItem
-    data class AddressHeader(val address: String) : PickupListItem
+    data class AddressHeader(val date: String, val address: String) : PickupListItem
     data class Code(val item: PackageCode) : PickupListItem
 }
 
@@ -62,7 +62,7 @@ class PickupListViewModel @Inject constructor(
             result.add(PickupListItem.DateHeader(date, pendingCount))
             val byAddress = dateCodes.groupBy { it.address.ifEmpty { "未知地址" } }
             for ((address, addressCodes) in byAddress) {
-                result.add(PickupListItem.AddressHeader(address))
+                result.add(PickupListItem.AddressHeader(date, address))
                 for (code in addressCodes) {
                     result.add(PickupListItem.Code(code))
                 }

@@ -84,7 +84,7 @@ fun PickupListScreen(
                 key = { item ->
                     when (item) {
                         is PickupListItem.DateHeader -> "date_${item.date}"
-                        is PickupListItem.AddressHeader -> "addr_${item.address}"
+                        is PickupListItem.AddressHeader -> "addr_${item.date}_${item.address}"
                         is PickupListItem.Code -> "code_${item.item.id}"
                     }
                 }
