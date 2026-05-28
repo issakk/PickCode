@@ -74,69 +74,34 @@ fun PickupListScreen(
             LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
         }
 
+        val flatItems = uiState.flatItems
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             items(
-                items = uiState.flatItems,
+                items = flatItems,
                 key = { item ->
                     when (item) {
                         is PickupListItem.DateHeader -> "date_${item.date}"
                         is PickupListItem.AddressHeader -> "addr_${item.date}_${item.address}"
                         is PickupListItem.Code -> "code_${item.item.id}"
                     }
-                }
+                },
+                contentType = { item -> item::class }
             ) { item ->
                 when (item) {
-                    is PickupListItem.DateHeader -> {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = item.date,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colorScheme.onSurfaceVariant,
-                                letterSpacing = 0.5.sp,
-                                modifier = Modifier.weight(1f)
-                            )
-                            if (item.pendingCount > 0) {
-                                Surface(
-                                    shape = RoundedCornerShape(12.dp),
-                                    color = colorScheme.primary.copy(alpha = 0.1f)
-                                ) {
-                                    Text(
-                                        text = "${item.pendingCount} 个待取",
-                                        fontSize = 11.sp,
-                                        color = colorScheme.primary,
-                                        fontWeight = FontWeight.Medium,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                                    )
-                                }
-                            }
-                            IconButton(onClick = { showDateDeleteDialog = item.date }, modifier = Modifier.size(32.dp)) {
-                                Icon(
-                                    Icons.Outlined.DeleteSweep,
-                                    contentDescription = "删除当日",
-                                    tint = colorScheme.error,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        }
-                    }
-                    is PickupListItem.AddressHeader -> {
-                        Text(
-                            text = item.address,
-                            fontSize = 13.sp,
-                            color = colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-                        )
-                    }
+                    is PickupListItem.DateHeader -> DateHeaderItem(
+                        date = item.date,
+                        pendingCount = item.pendingCount,
+                        onDelete = { showDateDeleteDialog = item.date },
+                        colorScheme = colorScheme
+                    )
+                    is PickupListItem.AddressHeader -> AddressHeaderItem(
+                        address = item.address,
+                        colorScheme = colorScheme
+                    )
                     is PickupListItem.Code -> {
                         val code = item.item
                         CodeCard(
@@ -199,4 +164,63 @@ fun PickupListScreen(
             }
         )
     }
+}
+
+@Composable
+private fun DateHeaderItem(
+    date: String,
+    pendingCount: Int,
+    onDelete: () -> Unit,
+    colorScheme: ColorScheme
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = date,
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = colorScheme.onSurfaceVariant,
+            letterSpacing = 0.5.sp,
+            modifier = Modifier.weight(1f)
+        )
+        if (pendingCount > 0) {
+            Surface(
+                shape = RoundedCornerShape(12.dp),
+                color = colorScheme.primary.copy(alpha = 0.1f)
+            ) {
+                Text(
+                    text = "$pendingCount 个待取",
+                    fontSize = 11.sp,
+                    color = colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+        }
+        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+            Icon(
+                Icons.Outlined.DeleteSweep,
+                contentDescription = "删除当日",
+                tint = colorScheme.error,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AddressHeaderItem(
+    address: String,
+    colorScheme: ColorScheme
+) {
+    Text(
+        text = address,
+        fontSize = 13.sp,
+        color = colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+    )
 }
