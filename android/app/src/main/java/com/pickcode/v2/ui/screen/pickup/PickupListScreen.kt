@@ -1,0 +1,203 @@
+package com.pickcode.v2.ui.screen.pickup
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.DeleteSweep
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import com.pickcode.v2.domain.model.PackageCode
+import com.pickcode.v2.navigation.Routes
+import com.pickcode.v2.ui.components.CodeCard
+import com.pickcode.v2.ui.components.GradientHeader
+import com.pickcode.v2.ui.theme.*
+import com.pickcode.v2.ui.util.formatDateChinese
+
+@Composable
+fun PickupListScreen(
+    rootNavController: NavHostController,
+    viewModel: PickupListViewModel = hiltViewModel()
+) {
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+    var showDeleteDialog by remember { mutableStateOf<PackageCode?>(null) }
+    var showDateDeleteDialog by remember { mutableStateOf<String?>(null) }
+    var showDeleteAllDialog by remember { mutableStateOf(false) }
+
+    val smsPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            viewModel.autoMatch(context)
+        } else {
+            Toast.makeText(context, "需要短信权限才能自动匹配取件码", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun requestSmsAndMatch() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) {
+            viewModel.autoMatch(context)
+        } else {
+            smsPermissionLauncher.launch(Manifest.permission.READ_SMS)
+        }
+    }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        GradientHeader(title = "取件码") {
+            if (uiState.codes.isNotEmpty()) {
+                IconButton(onClick = { showDeleteAllDialog = true }) {
+                    Icon(Icons.Outlined.DeleteSweep, contentDescription = "全部删除", tint = Surface)
+                }
+            }
+            IconButton(onClick = { requestSmsAndMatch() }) {
+                Icon(Icons.Outlined.Refresh, contentDescription = "自动匹配", tint = Surface)
+            }
+        }
+
+        // Loading indicator
+        if (uiState.isLoading) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
+        }
+
+        // Grouped list
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            uiState.groupedCodes.forEach { (dateStr, addressGroups) ->
+                // Date header
+                item(key = "header_$dateStr") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = dateStr,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextSecondary,
+                            letterSpacing = 0.5.sp,
+                            modifier = Modifier.weight(1f)
+                        )
+                        val pendingCount = uiState.pendingCountByDate[dateStr] ?: 0
+                        if (pendingCount > 0) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Primary.copy(alpha = 0.1f)
+                            ) {
+                                Text(
+                                    text = "$pendingCount 个待取",
+                                    fontSize = 11.sp,
+                                    color = Primary,
+                                    fontWeight = FontWeight.Medium,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
+                            }
+                        }
+                        IconButton(onClick = { showDateDeleteDialog = dateStr }, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                Icons.Outlined.DeleteSweep,
+                                contentDescription = "删除当日",
+                                tint = ErrorRed,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Address groups
+                addressGroups.forEach { (address, codes) ->
+                    item(key = "addr_${dateStr}_$address") {
+                        Text(
+                            text = address,
+                            fontSize = 13.sp,
+                            color = TextSecondary,
+                            modifier = Modifier.padding(start = 4.dp, top = 4.dp)
+                        )
+                    }
+
+                    items(codes, key = { it.id }) { code ->
+                        CodeCard(
+                            item = code,
+                            onTogglePicked = { viewModel.togglePicked(code) },
+                            onEdit = { rootNavController.navigate(Routes.editCode(code.id)) },
+                            onDelete = { showDeleteDialog = code }
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // Delete confirmation dialogs
+    showDeleteDialog?.let { item ->
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = null },
+            title = { Text("确认删除") },
+            text = { Text("确定要删除取件码 ${item.code} 吗？") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteCode(item); showDeleteDialog = null }) {
+                    Text("删除", color = ErrorRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = null }) { Text("取消") }
+            }
+        )
+    }
+
+    showDateDeleteDialog?.let { date ->
+        AlertDialog(
+            onDismissRequest = { showDateDeleteDialog = null },
+            title = { Text("确认删除") },
+            text = { Text("确定要删除 $date 的所有取件码吗？") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteByDate(date); showDateDeleteDialog = null }) {
+                    Text("删除", color = ErrorRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDateDeleteDialog = null }) { Text("取消") }
+            }
+        )
+    }
+
+    if (showDeleteAllDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteAllDialog = false },
+            title = { Text("全部删除") },
+            text = { Text("确定要删除所有 ${uiState.codes.size} 个取件码吗？此操作不可撤销。") },
+            confirmButton = {
+                TextButton(onClick = { viewModel.deleteAll(); showDeleteAllDialog = false }) {
+                    Text("全部删除", color = ErrorRed)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteAllDialog = false }) { Text("取消") }
+            }
+        )
+    }
+}
