@@ -4,6 +4,7 @@ import com.pickcode.v2.data.local.dao.PackageCodeDao
 import com.pickcode.v2.data.local.entity.PackageCodeEntity
 import com.pickcode.v2.domain.model.PackageCode
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -15,7 +16,7 @@ import javax.inject.Singleton
 class PackageCodeRepository @Inject constructor(
     private val dao: PackageCodeDao
 ) {
-    fun getAll(): Flow<List<PackageCode>> = dao.getAll().map { list -> list.map { it.toDomain() } }
+    fun getAll(): Flow<List<PackageCode>> = dao.getAll().map { list -> list.map { it.toDomain() } }.distinctUntilChanged()
 
     suspend fun getById(id: Long): PackageCode? = dao.getById(id)?.toDomain()
 

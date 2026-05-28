@@ -138,11 +138,12 @@ fun PickupListScreen(
                         )
                     }
                     is PickupListItem.Code -> {
+                        val code = item.item
                         CodeCard(
-                            item = item.item,
-                            onTogglePicked = { viewModel.togglePicked(item.item) },
-                            onEdit = { rootNavController.navigate(Routes.editCode(item.item.id)) },
-                            onDelete = { showDeleteDialog = item.item }
+                            item = code,
+                            onTogglePicked = remember(code) { { viewModel.togglePicked(code) } },
+                            onEdit = remember(code) { { rootNavController.navigate(Routes.editCode(code.id)) } },
+                            onDelete = remember(code) { { showDeleteDialog = code } }
                         )
                     }
                 }

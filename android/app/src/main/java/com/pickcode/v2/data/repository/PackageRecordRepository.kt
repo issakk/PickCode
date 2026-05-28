@@ -4,6 +4,7 @@ import com.pickcode.v2.data.local.dao.PackageRecordDao
 import com.pickcode.v2.data.local.entity.PackageRecordEntity
 import com.pickcode.v2.domain.model.PackageRecord
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -12,7 +13,7 @@ import javax.inject.Singleton
 class PackageRecordRepository @Inject constructor(
     private val dao: PackageRecordDao
 ) {
-    fun getAll(): Flow<List<PackageRecord>> = dao.getAll().map { list -> list.map { it.toDomain() } }
+    fun getAll(): Flow<List<PackageRecord>> = dao.getAll().map { list -> list.map { it.toDomain() } }.distinctUntilChanged()
 
     suspend fun getById(id: Long): PackageRecord? = dao.getById(id)?.toDomain()
 
