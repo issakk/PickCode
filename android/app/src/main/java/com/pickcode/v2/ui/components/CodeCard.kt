@@ -1,7 +1,6 @@
 package com.pickcode.v2.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,21 +28,23 @@ fun CodeCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    Card(
+    Surface(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        color = colorScheme.surface,
+        tonalElevation = 0.dp,
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Company icon circle
             Box(
                 modifier = Modifier
                     .size(36.dp)
-                    .clip(CircleShape)
-                    .background(if (item.isPicked) colorScheme.outline else colorScheme.primary),
+                    .background(
+                        if (item.isPicked) colorScheme.outline else colorScheme.primary,
+                        CircleShape
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -94,7 +94,6 @@ fun CodeCard(
                 }
             }
 
-            // Picked toggle
             Checkbox(
                 checked = item.isPicked,
                 onCheckedChange = { onTogglePicked() },
@@ -102,7 +101,6 @@ fun CodeCard(
                 colors = CheckboxDefaults.colors(checkedColor = colorScheme.success)
             )
 
-            // Edit button
             IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
                 Icon(Icons.Default.MoreVert, contentDescription = "更多", modifier = Modifier.size(18.dp))
             }
