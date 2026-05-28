@@ -30,7 +30,6 @@ import com.pickcode.v2.domain.model.PackageCode
 import com.pickcode.v2.navigation.Routes
 import com.pickcode.v2.ui.components.CodeCard
 import com.pickcode.v2.ui.components.GradientHeader
-import com.pickcode.v2.ui.theme.*
 import com.pickcode.v2.ui.util.formatDateChinese
 
 @Composable
@@ -40,6 +39,7 @@ fun PickupListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
     var showDeleteDialog by remember { mutableStateOf<PackageCode?>(null) }
     var showDateDeleteDialog by remember { mutableStateOf<String?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
@@ -66,11 +66,11 @@ fun PickupListScreen(
         GradientHeader(title = "取件码") {
             if (uiState.codes.isNotEmpty()) {
                 IconButton(onClick = { showDeleteAllDialog = true }) {
-                    Icon(Icons.Outlined.DeleteSweep, contentDescription = "全部删除", tint = Surface)
+                    Icon(Icons.Outlined.DeleteSweep, contentDescription = "全部删除")
                 }
             }
             IconButton(onClick = { requestSmsAndMatch() }) {
-                Icon(Icons.Outlined.Refresh, contentDescription = "自动匹配", tint = Surface)
+                Icon(Icons.Outlined.Refresh, contentDescription = "自动匹配")
             }
         }
 
@@ -98,7 +98,7 @@ fun PickupListScreen(
                             text = dateStr,
                             fontSize = 15.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = TextSecondary,
+                            color = colorScheme.onSurfaceVariant,
                             letterSpacing = 0.5.sp,
                             modifier = Modifier.weight(1f)
                         )
@@ -106,12 +106,12 @@ fun PickupListScreen(
                         if (pendingCount > 0) {
                             Surface(
                                 shape = RoundedCornerShape(12.dp),
-                                color = Primary.copy(alpha = 0.1f)
+                                color = colorScheme.primary.copy(alpha = 0.1f)
                             ) {
                                 Text(
                                     text = "$pendingCount 个待取",
                                     fontSize = 11.sp,
-                                    color = Primary,
+                                    color = colorScheme.primary,
                                     fontWeight = FontWeight.Medium,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                                 )
@@ -121,7 +121,7 @@ fun PickupListScreen(
                             Icon(
                                 Icons.Outlined.DeleteSweep,
                                 contentDescription = "删除当日",
-                                tint = ErrorRed,
+                                tint = colorScheme.error,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
@@ -134,7 +134,7 @@ fun PickupListScreen(
                         Text(
                             text = address,
                             fontSize = 13.sp,
-                            color = TextSecondary,
+                            color = colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 4.dp, top = 4.dp)
                         )
                     }
@@ -160,7 +160,7 @@ fun PickupListScreen(
             text = { Text("确定要删除取件码 ${item.code} 吗？") },
             confirmButton = {
                 TextButton(onClick = { viewModel.deleteCode(item); showDeleteDialog = null }) {
-                    Text("删除", color = ErrorRed)
+                    Text("删除", color = colorScheme.error)
                 }
             },
             dismissButton = {
@@ -176,7 +176,7 @@ fun PickupListScreen(
             text = { Text("确定要删除 $date 的所有取件码吗？") },
             confirmButton = {
                 TextButton(onClick = { viewModel.deleteByDate(date); showDateDeleteDialog = null }) {
-                    Text("删除", color = ErrorRed)
+                    Text("删除", color = colorScheme.error)
                 }
             },
             dismissButton = {
@@ -192,7 +192,7 @@ fun PickupListScreen(
             text = { Text("确定要删除所有 ${uiState.codes.size} 个取件码吗？此操作不可撤销。") },
             confirmButton = {
                 TextButton(onClick = { viewModel.deleteAll(); showDeleteAllDialog = false }) {
-                    Text("全部删除", color = ErrorRed)
+                    Text("全部删除", color = colorScheme.error)
                 }
             },
             dismissButton = {

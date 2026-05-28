@@ -6,8 +6,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +19,6 @@ import androidx.navigation.NavHostController
 import com.pickcode.v2.domain.model.MatchRule
 import com.pickcode.v2.navigation.Routes
 import com.pickcode.v2.ui.components.GradientHeader
-import com.pickcode.v2.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,15 +28,12 @@ fun MatchRulesScreen(
 ) {
     val rules by viewModel.rules.collectAsState()
     val presets by viewModel.presets.collectAsState()
+    val colorScheme = MaterialTheme.colorScheme
     var showPresetSheet by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf<MatchRule?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "匹配规则") {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Surface)
-            }
-        }
+        GradientHeader(title = "匹配规则", onBack = { navController.popBackStack() })
 
         LazyColumn(
             modifier = Modifier.weight(1f),
@@ -55,26 +51,26 @@ fun MatchRulesScreen(
                             Spacer(Modifier.height(4.dp))
                             Surface(
                                 shape = RoundedCornerShape(4.dp),
-                                color = if (rule.matchType == "startEnd") TagStartEndBg else TagRegexBg
+                                color = if (rule.matchType == "startEnd") colorScheme.primaryContainer else colorScheme.secondaryContainer
                             ) {
                                 Text(
                                     if (rule.matchType == "startEnd") "头尾" else "正则",
                                     fontSize = 11.sp,
-                                    color = if (rule.matchType == "startEnd") TagStartEndText else TagRegexText,
+                                    color = if (rule.matchType == "startEnd") colorScheme.onPrimaryContainer else colorScheme.onSecondaryContainer,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                                 )
                             }
-                            Text(rule.createTime, fontSize = 11.sp, color = TextTertiary)
+                            Text(rule.createTime, fontSize = 11.sp, color = colorScheme.outline)
                         }
                         Switch(
                             checked = rule.enabled,
                             onCheckedChange = { viewModel.toggleEnabled(rule) }
                         )
                         IconButton(onClick = { navController.navigate(Routes.matchSettings("edit", rule.id)) }) {
-                            Icon(Icons.Default.ArrowBack, contentDescription = "编辑", modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Edit, contentDescription = "编辑", modifier = Modifier.size(18.dp))
                         }
                         IconButton(onClick = { showDeleteDialog = rule }) {
-                            Icon(Icons.Default.Delete, contentDescription = "删除", tint = ErrorRed, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Delete, contentDescription = "删除", tint = colorScheme.error, modifier = Modifier.size(18.dp))
                         }
                     }
                 }
@@ -92,8 +88,7 @@ fun MatchRulesScreen(
             ) { Text("使用预制规则") }
             Button(
                 onClick = { navController.navigate(Routes.matchSettings("add")) },
-                modifier = Modifier.weight(1f),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                modifier = Modifier.weight(1f)
             ) { Text("添加规则") }
         }
     }
@@ -124,7 +119,7 @@ fun MatchRulesScreen(
             text = { Text("确定要删除规则 \"${rule.name}\" 吗？") },
             confirmButton = {
                 TextButton(onClick = { viewModel.deleteRule(rule); showDeleteDialog = null }) {
-                    Text("删除", color = ErrorRed)
+                    Text("删除", color = colorScheme.error)
                 }
             },
             dismissButton = { TextButton(onClick = { showDeleteDialog = null }) { Text("取消") } }

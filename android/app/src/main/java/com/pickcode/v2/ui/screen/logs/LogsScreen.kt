@@ -12,12 +12,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pickcode.v2.ui.components.GradientHeader
-import com.pickcode.v2.ui.theme.*
 import com.pickcode.v2.ui.util.LogBuffer
 import java.text.SimpleDateFormat
 import java.util.*
@@ -27,6 +25,7 @@ fun LogsScreen() {
     val logs by LogBuffer.logs.collectAsState()
     val listState = rememberLazyListState()
     val timeFormat = remember { SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()) }
+    val colorScheme = MaterialTheme.colorScheme
 
     LaunchedEffect(logs.size) {
         if (logs.isNotEmpty() && listState.firstVisibleItemIndex >= logs.size - 5) {
@@ -37,13 +36,13 @@ fun LogsScreen() {
     Column(modifier = Modifier.fillMaxSize()) {
         GradientHeader(title = "调试日志") {
             IconButton(onClick = { LogBuffer.clear() }) {
-                Icon(Icons.Default.Delete, contentDescription = "清除", tint = Surface)
+                Icon(Icons.Default.Delete, contentDescription = "清除")
             }
         }
 
         if (logs.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text("暂无日志", color = TextTertiary)
+                Text("暂无日志", color = colorScheme.outline)
             }
         } else {
             LazyColumn(
@@ -58,27 +57,27 @@ fun LogsScreen() {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFFF8F8F8), RoundedCornerShape(4.dp))
+                            .background(colorScheme.surfaceVariant, RoundedCornerShape(4.dp))
                             .padding(horizontal = 6.dp, vertical = 3.dp)
                     ) {
                         Text(
                             text = time,
                             fontSize = 10.sp,
-                            color = TextTertiary,
+                            color = colorScheme.outline,
                             fontFamily = FontFamily.Monospace,
                             modifier = Modifier.width(75.dp)
                         )
                         Text(
                             text = entry.tag,
                             fontSize = 10.sp,
-                            color = Primary,
+                            color = colorScheme.primary,
                             fontFamily = FontFamily.Monospace,
                             modifier = Modifier.width(60.dp)
                         )
                         Text(
                             text = entry.message,
                             fontSize = 10.sp,
-                            color = TextPrimary,
+                            color = colorScheme.onSurface,
                             fontFamily = FontFamily.Monospace,
                             modifier = Modifier.weight(1f)
                         )

@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +15,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.pickcode.v2.ui.components.GradientHeader
 import com.pickcode.v2.ui.components.TagGrid
-import com.pickcode.v2.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -27,13 +24,10 @@ fun EditCodeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "编辑取件码") {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Surface)
-            }
-        }
+        GradientHeader(title = "编辑取件码", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier
@@ -82,10 +76,7 @@ fun EditCodeScreen(
                     shape = RoundedCornerShape(8.dp)
                 )
                 Spacer(Modifier.width(8.dp))
-                Button(
-                    onClick = { viewModel.addCustomTag() },
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary)
-                ) {
+                Button(onClick = { viewModel.addCustomTag() }) {
                     Text("添加")
                 }
             }
@@ -122,8 +113,7 @@ fun EditCodeScreen(
                         Toast.makeText(context, "请输入取件码", Toast.LENGTH_SHORT).show()
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("保存", modifier = Modifier.padding(vertical = 4.dp))
             }

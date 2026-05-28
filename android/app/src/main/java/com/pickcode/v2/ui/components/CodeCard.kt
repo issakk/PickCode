@@ -16,7 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pickcode.v2.domain.model.PackageCode
-import com.pickcode.v2.ui.theme.*
+import com.pickcode.v2.ui.theme.success
 import com.pickcode.v2.ui.util.formatCode
 import com.pickcode.v2.ui.util.getCompanyShortName
 
@@ -28,11 +28,11 @@ fun CodeCard(
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -43,12 +43,12 @@ fun CodeCard(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(if (item.isPicked) Divider else Primary),
+                    .background(if (item.isPicked) colorScheme.outline else colorScheme.primary),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = getCompanyShortName(item.company),
-                    color = Surface,
+                    color = colorScheme.onPrimary,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -61,27 +61,27 @@ fun CodeCard(
                     text = formatCode(item.code),
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (item.isPicked) TextTertiary else TextPrimary,
+                    color = if (item.isPicked) colorScheme.outline else colorScheme.onSurface,
                     letterSpacing = (-0.3).sp
                 )
                 if (item.company.isNotEmpty()) {
-                    Text(text = item.company, fontSize = 11.sp, color = TextSecondary)
+                    Text(text = item.company, fontSize = 11.sp, color = colorScheme.onSurfaceVariant)
                 }
                 if (item.address.isNotEmpty() && item.address != "手动添加") {
-                    Text(text = item.address, fontSize = 11.sp, color = TextTertiary)
+                    Text(text = item.address, fontSize = 11.sp, color = colorScheme.outline)
                 }
                 if (item.tags.isNotEmpty()) {
                     Row(modifier = Modifier.padding(top = 3.dp)) {
                         item.tags.forEach { tag ->
                             Surface(
                                 shape = RoundedCornerShape(4.dp),
-                                color = TagStartEndBg,
+                                color = colorScheme.primaryContainer,
                                 modifier = Modifier.padding(end = 4.dp)
                             ) {
                                 Text(
                                     text = tag,
                                     fontSize = 10.sp,
-                                    color = TagStartEndText,
+                                    color = colorScheme.onPrimaryContainer,
                                     modifier = Modifier.padding(horizontal = 6.dp, vertical = 1.dp)
                                 )
                             }
@@ -89,7 +89,7 @@ fun CodeCard(
                     }
                 }
                 if (item.remark.isNotEmpty()) {
-                    Text(text = item.remark, fontSize = 11.sp, color = TextTertiary)
+                    Text(text = item.remark, fontSize = 11.sp, color = colorScheme.outline)
                 }
             }
 
@@ -98,7 +98,7 @@ fun CodeCard(
                 checked = item.isPicked,
                 onCheckedChange = { onTogglePicked() },
                 modifier = Modifier.size(36.dp),
-                colors = CheckboxDefaults.colors(checkedColor = SuccessGreen)
+                colors = CheckboxDefaults.colors(checkedColor = colorScheme.success)
             )
 
             // Edit button

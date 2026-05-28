@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -17,7 +15,6 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.pickcode.v2.ui.components.GradientHeader
-import com.pickcode.v2.ui.theme.*
 
 @Composable
 fun AiSettingsScreen(
@@ -26,14 +23,11 @@ fun AiSettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
     var showKey by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "AI 设置") {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Surface)
-            }
-        }
+        GradientHeader(title = "AI 设置", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier
@@ -100,8 +94,7 @@ fun AiSettingsScreen(
                             Toast.makeText(context, "请填写所有字段", Toast.LENGTH_SHORT).show()
                         }
                     },
-                    modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                    modifier = Modifier.weight(1f)
                 ) {
                     Text("保存")
                 }
@@ -110,7 +103,7 @@ fun AiSettingsScreen(
             Text(
                 "支持任何 OpenAI 兼容 API（DeepSeek、通义千问等）",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextTertiary
+                color = colorScheme.outline
             )
         }
     }

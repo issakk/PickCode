@@ -4,24 +4,19 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.pickcode.v2.ui.components.GradientHeader
-import com.pickcode.v2.ui.theme.*
 
 @Composable
 fun ChangelogScreen(navController: NavHostController) {
+    val colorScheme = MaterialTheme.colorScheme
+
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "更新记录") {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Surface)
-            }
-        }
+        GradientHeader(title = "更新记录", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier
@@ -52,9 +47,10 @@ fun ChangelogScreen(navController: NavHostController) {
 
 @Composable
 private fun VersionCard(version: String, date: String, items: List<String>) {
+    val colorScheme = MaterialTheme.colorScheme
     Card(shape = RoundedCornerShape(12.dp)) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(version, style = MaterialTheme.typography.titleMedium, color = Primary)
+            Text(version, style = MaterialTheme.typography.titleMedium, color = colorScheme.primary)
             Text(date, style = MaterialTheme.typography.bodySmall)
             Spacer(Modifier.height(8.dp))
             items.forEach { item ->

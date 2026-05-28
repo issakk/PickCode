@@ -5,8 +5,6 @@ import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +15,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.pickcode.v2.ui.components.GradientHeader
 import com.pickcode.v2.ui.components.PlatformIcon
-import com.pickcode.v2.ui.theme.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -28,13 +25,10 @@ fun EditPackageScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = if (uiState.isEdit) "编辑包裹" else "添加包裹") {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Surface)
-            }
-        }
+        GradientHeader(title = if (uiState.isEdit) "编辑包裹" else "添加包裹", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier
@@ -60,7 +54,7 @@ fun EditPackageScreen(
                                 .clickable { viewModel.updatePlatform(platform) },
                             shape = RoundedCornerShape(8.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = if (selected) Primary.copy(alpha = 0.1f) else Surface
+                                containerColor = if (selected) colorScheme.primaryContainer else colorScheme.surface
                             ),
                             elevation = CardDefaults.cardElevation(if (selected) 2.dp else 0.dp)
                         ) {
@@ -124,8 +118,7 @@ fun EditPackageScreen(
                         Toast.makeText(context, "请输入商品名称", Toast.LENGTH_SHORT).show()
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("保存", modifier = Modifier.padding(vertical = 4.dp))
             }

@@ -25,7 +25,8 @@ import com.pickcode.v2.domain.model.PackageRecord
 import com.pickcode.v2.navigation.Routes
 import com.pickcode.v2.ui.components.GradientHeader
 import com.pickcode.v2.ui.components.PlatformIcon
-import com.pickcode.v2.ui.theme.*
+import com.pickcode.v2.ui.theme.success
+import com.pickcode.v2.ui.theme.specialty
 import com.pickcode.v2.ui.util.openPlatformApp
 
 @Composable
@@ -35,6 +36,7 @@ fun PackageRecordScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
     var showDeleteDialog by remember { mutableStateOf<PackageRecord?>(null) }
     var showDateDeleteDialog by remember { mutableStateOf<String?>(null) }
 
@@ -64,10 +66,10 @@ fun PackageRecordScreen(
                             Text(
                                 text = "${records.size}个包裹，${checkedCount}个已签收",
                                 fontSize = 12.sp,
-                                color = TextSecondary
+                                color = colorScheme.onSurfaceVariant
                             )
                             IconButton(onClick = { showDateDeleteDialog = date }) {
-                                Icon(Icons.Outlined.Delete, contentDescription = "删除", tint = ErrorRed, modifier = Modifier.size(18.dp))
+                                Icon(Icons.Outlined.Delete, contentDescription = "删除", tint = colorScheme.error, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
@@ -78,8 +80,6 @@ fun PackageRecordScreen(
                         item(key = "platform_${date}_$platform") {
                             Card(
                                 shape = RoundedCornerShape(12.dp),
-                                colors = CardDefaults.cardColors(containerColor = Surface),
-                                elevation = CardDefaults.cardElevation(1.dp)
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -88,7 +88,7 @@ fun PackageRecordScreen(
                                         Text(platform, fontWeight = FontWeight.Medium, modifier = Modifier.weight(1f))
                                         val total = platformRecords.sumOf { it.price.toDoubleOrNull() ?: 0.0 }
                                         if (total > 0) {
-                                            Text("¥${String.format("%.2f", total)}", color = OrangePrice, fontSize = 14.sp)
+                                            Text("¥${String.format("%.2f", total)}", color = colorScheme.specialty, fontSize = 14.sp)
                                         }
                                     }
 
@@ -102,16 +102,16 @@ fun PackageRecordScreen(
                                             Checkbox(
                                                 checked = record.checked,
                                                 onCheckedChange = { viewModel.toggleChecked(record) },
-                                                colors = CheckboxDefaults.colors(checkedColor = SuccessGreen)
+                                                colors = CheckboxDefaults.colors(checkedColor = colorScheme.success)
                                             )
                                             Text(
                                                 text = record.name,
                                                 modifier = Modifier.weight(1f),
                                                 fontSize = 14.sp,
-                                                color = if (record.checked) TextTertiary else TextPrimary
+                                                color = if (record.checked) colorScheme.outline else colorScheme.onSurface
                                             )
                                             if (record.price.isNotEmpty() && record.price != "0.00") {
-                                                Text("¥${record.price}", fontSize = 13.sp, color = TextSecondary)
+                                                Text("¥${record.price}", fontSize = 13.sp, color = colorScheme.onSurfaceVariant)
                                             }
                                             IconButton(onClick = {
                                                 rootNavController.navigate(Routes.editPackage(record.id, "edit"))
@@ -132,9 +132,8 @@ fun PackageRecordScreen(
         FloatingActionButton(
             onClick = { rootNavController.navigate(Routes.editPackage(type = "add")) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-            containerColor = Primary
         ) {
-            Icon(Icons.Outlined.Add, contentDescription = "添加包裹", tint = Surface)
+            Icon(Icons.Outlined.Add, contentDescription = "添加包裹")
         }
     }
 
@@ -145,7 +144,7 @@ fun PackageRecordScreen(
             text = { Text("确定要删除 ${record.name} 吗？") },
             confirmButton = {
                 TextButton(onClick = { viewModel.deleteRecord(record); showDeleteDialog = null }) {
-                    Text("删除", color = ErrorRed)
+                    Text("删除", color = colorScheme.error)
                 }
             },
             dismissButton = { TextButton(onClick = { showDeleteDialog = null }) { Text("取消") } }
@@ -159,7 +158,7 @@ fun PackageRecordScreen(
             text = { Text("确定要删除 $date 的所有包裹吗？") },
             confirmButton = {
                 TextButton(onClick = { viewModel.deleteByDate(date); showDateDeleteDialog = null }) {
-                    Text("删除", color = ErrorRed)
+                    Text("删除", color = colorScheme.error)
                 }
             },
             dismissButton = { TextButton(onClick = { showDateDeleteDialog = null }) { Text("取消") } }

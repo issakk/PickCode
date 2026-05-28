@@ -39,7 +39,6 @@ fun MainScreen(rootNavController: NavHostController) {
     Scaffold(
         bottomBar = {
             NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface,
                 tonalElevation = 0.dp
             ) {
                 BottomTab.entries.forEach { tab ->
@@ -56,14 +55,7 @@ fun MainScreen(rootNavController: NavHostController) {
                             }
                         },
                         icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label, fontSize = 11.sp) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = com.pickcode.v2.ui.theme.Primary,
-                            selectedTextColor = com.pickcode.v2.ui.theme.Primary,
-                            unselectedIconColor = com.pickcode.v2.ui.theme.TextTertiary,
-                            unselectedTextColor = com.pickcode.v2.ui.theme.TextTertiary,
-                            indicatorColor = com.pickcode.v2.ui.theme.Primary.copy(alpha = 0.08f)
-                        )
+                        label = { Text(tab.label, fontSize = 11.sp) }
                     )
                 }
             }

@@ -5,8 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -15,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.pickcode.v2.ui.components.GradientHeader
-import com.pickcode.v2.ui.theme.*
+import com.pickcode.v2.ui.theme.success
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,13 +23,10 @@ fun MatchSettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val colorScheme = MaterialTheme.colorScheme
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "匹配设置") {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Surface)
-            }
-        }
+        GradientHeader(title = "匹配设置", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier
@@ -120,7 +115,7 @@ fun MatchSettingsScreen(
                             Text(
                                 text = if (result.isNotEmpty()) "匹配结果: $result" else "未匹配到",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (result.isNotEmpty()) SuccessGreen else ErrorRed,
+                                color = if (result.isNotEmpty()) colorScheme.success else colorScheme.error,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
@@ -152,8 +147,7 @@ fun MatchSettingsScreen(
                         Toast.makeText(context, "请填写规则名称和至少一条匹配规则", Toast.LENGTH_SHORT).show()
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text("保存规则", modifier = Modifier.padding(vertical = 4.dp))
             }

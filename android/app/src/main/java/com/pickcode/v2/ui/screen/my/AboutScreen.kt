@@ -4,24 +4,17 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.pickcode.v2.ui.components.GradientHeader
-import com.pickcode.v2.ui.theme.Surface
 
 @Composable
 fun AboutScreen(navController: NavHostController) {
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "软件介绍") {
-            IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "返回", tint = Surface)
-            }
-        }
+        GradientHeader(title = "软件介绍", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier
