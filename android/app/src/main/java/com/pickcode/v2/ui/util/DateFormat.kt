@@ -12,11 +12,8 @@ fun parseTime(timestamp: Long): String {
 
 fun formatDateChinese(dateStr: String): String {
     return try {
-        val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.CHINA)
-        val date = sdf.parse(dateStr.take(10))
-        val cal = Calendar.getInstance()
-        cal.time = date!!
-        "${cal.get(Calendar.YEAR)}年${cal.get(Calendar.MONTH) + 1}月${cal.get(Calendar.DAY_OF_MONTH)}日"
+        val date = java.time.LocalDate.parse(dateStr.take(10))
+        "${date.year}年${date.monthValue}月${date.dayOfMonth}日"
     } catch (e: Exception) {
         dateStr
     }

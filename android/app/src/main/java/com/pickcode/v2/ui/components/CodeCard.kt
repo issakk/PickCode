@@ -28,16 +28,13 @@ fun CodeCard(
 ) {
     val colorScheme = MaterialTheme.colorScheme
 
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        color = colorScheme.surface,
-        tonalElevation = 0.dp,
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(colorScheme.surface, RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 8.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(36.dp)
