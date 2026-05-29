@@ -4,6 +4,14 @@
 
 # Ktor
 -keep class io.ktor.** { *; }
+-dontwarn io.ktor.**
+
+# SLF4J (not available on Android, referenced by Ktor)
+-dontwarn org.slf4j.**
+
+# Java Management API (not available on Android, referenced by Ktor debug utils)
+-dontwarn java.lang.management.**
+-dontwarn javax.management.**
 
 # kotlinx.serialization
 -keepattributes *Annotation*, InnerClasses
