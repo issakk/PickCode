@@ -92,18 +92,23 @@ fun PickupListScreen(
                 contentType = { item -> item::class }
             ) { item ->
                 when (item) {
-                    is PickupListItem.DateHeader -> Text(
-                        text = "=== ${item.date} ===",
-                        modifier = Modifier.padding(vertical = 4.dp)
+                    is PickupListItem.DateHeader -> DateHeaderItem(
+                        date = item.date,
+                        pendingCount = item.pendingCount,
+                        onDelete = { showDateDeleteDialog = item.date },
+                        colorScheme = colorScheme
                     )
-                    is PickupListItem.AddressHeader -> Text(
-                        text = "  @ ${item.address}",
-                        fontSize = 12.sp
+                    is PickupListItem.AddressHeader -> AddressHeaderItem(
+                        address = item.address,
+                        colorScheme = colorScheme
                     )
                     is PickupListItem.Code -> {
-                        Text(
-                            text = "#${item.item.id} ${item.item.code} ${item.item.company} ${if (item.item.isPicked) "v" else "x"}",
-                            modifier = Modifier.padding(start = 16.dp, top = 2.dp, bottom = 2.dp)
+                        val code = item.item
+                        CodeCard(
+                            item = code,
+                            onTogglePicked = remember(code) { { viewModel.togglePicked(code) } },
+                            onEdit = remember(code) { { rootNavController.navigate(Routes.editCode(code.id)) } },
+                            onDelete = remember(code) { { showDeleteDialog = code } }
                         )
                     }
                 }
