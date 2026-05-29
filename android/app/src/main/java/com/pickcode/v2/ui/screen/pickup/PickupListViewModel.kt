@@ -15,6 +15,7 @@ import com.pickcode.v2.ui.util.LogBuffer
 import com.pickcode.v2.ui.util.formatDateChinese
 import com.pickcode.v2.ui.util.todayString
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -51,23 +52,30 @@ class PickupListViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            repository.getAll().collect { codes ->
-                _uiState.value = PickupListUiState(
-                    codes = codes,
-                    flatItems = buildFlatItems(codes)
-                )
-            }
+            repository.getAll()
+                .map { codes ->
+                    PickupListUiState(codes = codes, flatItems = buildFlatItems(codes))
+                }
+                .flowOn(Dispatchers.Default)
+                .collect { _uiState.value = it }
         }
     }
 
     private fun buildFlatItems(codes: List<PackageCode>): List<PickupListItem> {
-        val byDate = codes.groupBy { formatDateChinese(it.date) }
-            .toSortedMap(compareByDescending { it })
+        val byDate = linkedMapOf<String, MutableList<PackageCode>>()
+        for (code in codes) {
+            val key = formatDateChinese(code.date)
+            byDate.getOrPut(key) { mutableListOf() }.add(code)
+        }
         val result = mutableListOf<PickupListItem>()
         for ((date, dateCodes) in byDate) {
             val pendingCount = dateCodes.count { !it.isPicked }
             result.add(PickupListItem.DateHeader(date, pendingCount))
-            val byAddress = dateCodes.groupBy { it.address.ifEmpty { "未知地址" } }
+            val byAddress = linkedMapOf<String, MutableList<PackageCode>>()
+            for (code in dateCodes) {
+                val addr = code.address.ifEmpty { "未知地址" }
+                byAddress.getOrPut(addr) { mutableListOf() }.add(code)
+            }
             for ((address, addressCodes) in byAddress) {
                 result.add(PickupListItem.AddressHeader(date, address))
                 for (code in addressCodes) {
