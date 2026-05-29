@@ -18,6 +18,8 @@ class PackageCodeRepository @Inject constructor(
 ) {
     fun getAll(): Flow<List<PackageCode>> = dao.getAll().map { list -> list.map { it.toDomain() } }.distinctUntilChanged()
 
+    suspend fun getAllOnce(): List<PackageCode> = dao.getAllOnce().map { it.toDomain() }
+
     suspend fun getById(id: Long): PackageCode? = dao.getById(id)?.toDomain()
 
     suspend fun insert(code: PackageCode): Long = dao.insert(code.toEntity())

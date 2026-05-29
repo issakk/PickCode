@@ -16,8 +16,12 @@ import com.pickcode.v2.ui.util.formatDateChinese
 import com.pickcode.v2.ui.util.todayString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -51,14 +55,15 @@ class PickupListViewModel @Inject constructor(
     val uiState: StateFlow<PickupListUiState> = _uiState.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            repository.getAll()
-                .map { codes ->
-                    PickupListUiState(codes = codes, flatItems = buildFlatItems(codes))
-                }
-                .flowOn(Dispatchers.Default)
-                .collect { _uiState.value = it }
-        }
+        viewModelScope.launch { refresh() }
+    }
+
+    private suspend fun refresh() {
+        val codes = withContext(Dispatchers.IO) { repository.getAllOnce() }
+        _uiState.value = PickupListUiState(
+            codes = codes,
+            flatItems = buildFlatItems(codes)
+        )
     }
 
     private fun buildFlatItems(codes: List<PackageCode>): List<PickupListItem> {
@@ -89,47 +94,57 @@ class PickupListViewModel @Inject constructor(
     fun addCode(codeText: String) {
         viewModelScope.launch {
             val todayPrefix = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            val existing = repository.findByCodeAndDate(codeText, todayPrefix)
-            if (existing != null) {
-                return@launch
-            }
+            val existing = withContext(Dispatchers.IO) { repository.findByCodeAndDate(codeText, todayPrefix) }
+            if (existing != null) return@launch
             val now = todayString()
-            repository.insert(
-                PackageCode(
-                    code = codeText,
-                    date = now,
-                    sendDate = now,
-                    company = "手动添加",
-                    address = "手动添加",
-                    isManual = true
-                )
+            val newCode = PackageCode(
+                code = codeText,
+                date = now,
+                sendDate = now,
+                company = "手动添加",
+                address = "手动添加",
+                isManual = true
             )
+            val id = withContext(Dispatchers.IO) { repository.insert(newCode) }
+            val savedCode = newCode.copy(id = id)
+            _uiState.update { current ->
+                val updatedCodes = listOf(savedCode) + current.codes
+                current.copy(codes = updatedCodes, flatItems = buildFlatItems(updatedCodes))
+            }
         }
     }
 
     fun togglePicked(item: PackageCode) {
-        viewModelScope.launch {
-            repository.update(item.copy(isPicked = !item.isPicked))
+        val toggled = item.copy(isPicked = !item.isPicked)
+        _uiState.update { current ->
+            val updatedCodes = current.codes.map { if (it.id == item.id) toggled else it }
+            current.copy(codes = updatedCodes, flatItems = buildFlatItems(updatedCodes))
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.update(toggled)
         }
     }
 
     fun deleteCode(item: PackageCode) {
-        viewModelScope.launch {
-            repository.delete(item)
+        _uiState.update { current ->
+            val updatedCodes = current.codes.filter { it.id != item.id }
+            current.copy(codes = updatedCodes, flatItems = buildFlatItems(updatedCodes))
         }
+        viewModelScope.launch(Dispatchers.IO) { repository.delete(item) }
     }
 
     fun deleteByDate(dateStr: String) {
-        viewModelScope.launch {
-            val codes = _uiState.value.codes.filter { formatDateChinese(it.date) == dateStr }
-            repository.deleteByIds(codes.map { it.id })
+        val idsToDelete = _uiState.value.codes.filter { formatDateChinese(it.date) == dateStr }.map { it.id }
+        _uiState.update { current ->
+            val updatedCodes = current.codes.filter { formatDateChinese(it.date) != dateStr }
+            current.copy(codes = updatedCodes, flatItems = buildFlatItems(updatedCodes))
         }
+        viewModelScope.launch(Dispatchers.IO) { repository.deleteByIds(idsToDelete) }
     }
 
     fun deleteAll() {
-        viewModelScope.launch {
-            repository.deleteAll()
-        }
+        _uiState.update { it.copy(codes = emptyList(), flatItems = emptyList()) }
+        viewModelScope.launch(Dispatchers.IO) { repository.deleteAll() }
     }
 
     fun autoMatch(context: Context) {
@@ -147,9 +162,9 @@ class PickupListViewModel @Inject constructor(
                     LogBuffer.d("PickCode", "规则: ${r.name}, type=${r.matchType}, code.start=${r.rules.code.start}, code.end=${r.rules.code.end}, code.pattern=${r.rules.code.pattern}")
                 }
 
-                val messages = smsReader.readRecentSms(4)
+                val messages = withContext(Dispatchers.IO) { smsReader.readRecentSms(4) }
                 LogBuffer.d("PickCode", "读取短信数: ${messages.size}")
-                val existingCodes = _uiState.value.codes.map { it.code }.toSet()
+                val existingCodes = _uiState.value.codes.map { it.code }.toMutableSet()
                 val now = todayString()
                 var addedCount = 0
 
@@ -168,10 +183,12 @@ class PickupListViewModel @Inject constructor(
                                 isManual = false
                             )
                         )
+                        existingCodes.add(info.code)
                         addedCount++
                     }
                 }
 
+                refresh()
                 val toastMsg = if (addedCount > 0) "匹配到 $addedCount 个取件码" else "暂无匹配结果"
                 Toast.makeText(context, toastMsg, Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {

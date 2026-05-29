@@ -9,6 +9,9 @@ interface PackageCodeDao {
     @Query("SELECT * FROM package_codes ORDER BY date DESC")
     fun getAll(): Flow<List<PackageCodeEntity>>
 
+    @Query("SELECT * FROM package_codes ORDER BY date DESC")
+    suspend fun getAllOnce(): List<PackageCodeEntity>
+
     @Query("SELECT * FROM package_codes WHERE id = :id")
     suspend fun getById(id: Long): PackageCodeEntity?
 

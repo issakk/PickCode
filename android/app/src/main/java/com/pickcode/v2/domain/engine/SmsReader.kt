@@ -20,47 +20,28 @@ class SmsReader(private val context: Context) {
         }.timeInMillis
 
         val uri = Uri.parse("content://sms/")
-        LogBuffer.d("PickCode", "SMS查询: startTime=$startTime, daysBack=$daysBack")
-
-        // 先不带过滤查所有短信，排查 MIUI 兼容问题
-        val cursor = context.contentResolver.query(uri, null, null, null, null)
-        LogBuffer.d("PickCode", "SMS cursor(无过滤): ${cursor?.count ?: "null"}")
+        val selection = "date >= ?"
+        val selectionArgs = arrayOf(startTime.toString())
+        val cursor = context.contentResolver.query(uri, null, selection, selectionArgs, "date DESC")
+        LogBuffer.d("PickCode", "SMS查询: startTime=$startTime, daysBack=$daysBack, count=${cursor?.count ?: 0}")
 
         cursor?.use {
             val bodyIdx = it.getColumnIndex("body")
             val dateIdx = it.getColumnIndex("date")
             val addressIdx = it.getColumnIndex("address")
-            LogBuffer.d("PickCode", "SMS columnIndex: body=$bodyIdx, date=$dateIdx, address=$addressIdx")
-            val typeIdx = it.getColumnIndex("type")
             var count = 0
             while (it.moveToNext()) {
                 val body = it.getString(bodyIdx) ?: continue
                 val smsDate = it.getLong(dateIdx)
                 val addr = it.getString(addressIdx)
-                val smsType = if (typeIdx >= 0) it.getInt(typeIdx) else -1
                 if (count < 5) {
-                    LogBuffer.d("PickCode", "SMS[$count] type=$smsType date=$smsDate addr=$addr body=${body.take(60)}")
+                    LogBuffer.d("PickCode", "SMS[$count] date=$smsDate addr=$addr body=${body.take(60)}")
                 }
-                // 只保留指定天数内的短信
-                if (smsDate >= startTime) {
-                    messages.add(SmsMessage(body, parseTime(smsDate), addr))
-                }
+                messages.add(SmsMessage(body, parseTime(smsDate), addr))
                 count++
             }
-            LogBuffer.d("PickCode", "SMS总数=$count, 过滤后=${messages.size}")
+            LogBuffer.d("PickCode", "SMS匹配数: $count")
         }
-
-        // 额外查各种 URI 数量对比
-        for (subUri in listOf("content://sms/inbox", "content://sms/sent", "content://sms/draft", "content://sms/outbox", "content://mms-sms/", "content://mms/")) {
-            try {
-                val c = context.contentResolver.query(Uri.parse(subUri), null, null, null, null)
-                LogBuffer.d("PickCode", "$subUri: ${c?.count ?: "null"}")
-                c?.close()
-            } catch (e: Exception) {
-                LogBuffer.d("PickCode", "$subUri: 异常 ${e.message}")
-            }
-        }
-        LogBuffer.d("PickCode", "读取短信总数: ${messages.size}")
         return messages
     }
 }
