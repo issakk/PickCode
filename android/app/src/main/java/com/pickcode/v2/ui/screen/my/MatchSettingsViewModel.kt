@@ -55,7 +55,7 @@ class MatchSettingsViewModel @Inject constructor(
         if (mode == "edit" && ruleId.isNotEmpty()) {
             viewModelScope.launch {
                 repository.getById(ruleId)?.let { rule ->
-                    _uiState.value = MatchSettingsUiState(
+                    _uiState.value = updateMatchResults(MatchSettingsUiState(
                         ruleName = rule.name,
                         smsContent = rule.smsContent,
                         matchType = rule.matchType,
@@ -75,7 +75,7 @@ class MatchSettingsViewModel @Inject constructor(
                             "address" to rule.rules.address.pattern
                         ),
                         isEdit = true
-                    )
+                    ))
                 }
             }
         }
