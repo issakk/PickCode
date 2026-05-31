@@ -3,7 +3,6 @@ package com.pickcode.v2.ui.screen.main
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Inventory2
-import androidx.compose.material.icons.outlined.ListAlt
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -18,12 +17,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.pickcode.v2.ui.screen.my.MyScreen
-import com.pickcode.v2.ui.screen.package_record.PackageRecordScreen
 import com.pickcode.v2.ui.screen.pickup.PickupListScreen
 
 enum class BottomTab(val route: String, val label: String, val icon: ImageVector) {
     Pickup("pickup_list", "取件码", Icons.Outlined.Inventory2),
-    Packages("package_records", "包裹", Icons.Outlined.ListAlt),
     My("my", "我的", Icons.Outlined.Person)
 }
 
@@ -64,7 +61,6 @@ fun MainScreen(rootNavController: NavHostController) {
             modifier = Modifier.padding(padding)
         ) {
             composable(BottomTab.Pickup.route) { PickupListScreen(rootNavController) }
-            composable(BottomTab.Packages.route) { PackageRecordScreen(rootNavController) }
             composable(BottomTab.My.route) { MyScreen(rootNavController) }
         }
     }

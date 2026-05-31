@@ -52,14 +52,13 @@ android/app/src/main/java/com/pickcode/v2/
 └── PickCodeApp.kt      # Application 入口 (@HiltAndroidApp)
 ```
 
-### 三 Tab 结构
+### 两 Tab 结构
 
-底部导航由 `MainScreen.kt` 管理，三个 Tab：
+底部导航由 `MainScreen.kt` 管理，两个 Tab：
 
 | Tab | Route | Screen | 功能 |
 |-----|-------|--------|------|
 | 取件码 | `pickup_list` | `PickupListScreen` | 短信读取、匹配、取件码列表展示 |
-| 包裹 | `package_records` | `PackageRecordScreen` | 包裹跟踪记录 |
 | 我的 | `my` | `MyScreen` | 匹配规则管理、AI 设置、FAQ、关于 |
 
 ### 核心数据流
