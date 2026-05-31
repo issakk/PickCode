@@ -147,7 +147,7 @@ class PickupListViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) { repository.deleteAll() }
     }
 
-    fun autoMatch(context: Context) {
+    fun autoMatch(context: Context, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             try {
@@ -191,6 +191,9 @@ class PickupListViewModel @Inject constructor(
                 refresh()
                 val toastMsg = if (addedCount > 0) "匹配到 $addedCount 个取件码" else "暂无匹配结果"
                 Toast.makeText(context, toastMsg, Toast.LENGTH_SHORT).show()
+                if (addedCount > 0) {
+                    onSuccess()
+                }
             } catch (e: Exception) {
                 Toast.makeText(context, "读取短信失败: ${e.message}", Toast.LENGTH_SHORT).show()
             } finally {

@@ -7,7 +7,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.DeleteSweep
@@ -27,6 +29,7 @@ import com.pickcode.v2.domain.model.PackageCode
 import com.pickcode.v2.navigation.Routes
 import com.pickcode.v2.ui.components.CodeCard
 import com.pickcode.v2.ui.components.GradientHeader
+import kotlinx.coroutines.launch
 
 @Composable
 fun PickupListScreen(
@@ -36,6 +39,8 @@ fun PickupListScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
+    val listState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     var showDeleteDialog by remember { mutableStateOf<PackageCode?>(null) }
     var showDateDeleteDialog by remember { mutableStateOf<String?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
@@ -44,7 +49,9 @@ fun PickupListScreen(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            viewModel.autoMatch(context)
+            viewModel.autoMatch(context) {
+                coroutineScope.launch { listState.animateScrollToItem(0) }
+            }
         } else {
             Toast.makeText(context, "需要短信权限才能自动匹配取件码", Toast.LENGTH_SHORT).show()
         }
@@ -52,7 +59,9 @@ fun PickupListScreen(
 
     fun requestSmsAndMatch() {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) {
-            viewModel.autoMatch(context)
+            viewModel.autoMatch(context) {
+                coroutineScope.launch { listState.animateScrollToItem(0) }
+            }
         } else {
             smsPermissionLauncher.launch(Manifest.permission.READ_SMS)
         }
@@ -76,6 +85,7 @@ fun PickupListScreen(
 
         val flatItems = uiState.flatItems
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
