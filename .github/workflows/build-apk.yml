@@ -39,4 +39,5 @@ jobs:
           name: pickcode-release-apk
           path: android/app/build/outputs/apk/release/*.apk
           retention-days: 30
+          compression-level: 0
           if-no-files-found: error
