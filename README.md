@@ -4,8 +4,9 @@
 
 ## 功能
 
-- **短信自动匹配** — 读取短信，按规则提取取件码、快递公司、取件地址
-- **自定义匹配规则** — 支持 start/end 文本匹配和正则表达式两种模式
+- **短信自动匹配** — 读取短信，按规则提取取件码、快递公司、取件地址；匹配成功后自动回到列表顶部
+- **自定义匹配规则** — 支持 start/end 文本匹配、正则表达式、短信关键词初筛
+- **多取件码提取** — 支持一条短信匹配多个取件码，自动去重保存
 - **包裹记录** — 跟踪包裹状态，支持标签、备注、已取/未取标记
 - **平台图标识别** — 自动识别淘宝、京东、拼多多、抖音等平台来源
 - **AI 辅助** — 可配置 AI 接口辅助生成匹配规则
@@ -32,7 +33,7 @@ android/app/src/main/java/com/pickcode/v2/
 ├── di/             # Hilt 依赖注入模块
 ├── navigation/     # Navigation Compose 路由
 ├── ui/
-│   ├── components/ # 公共组件（TagGrid、PlatformIcon）
+│   ├── components/ # 公共组件（CodeCard、TagGrid、PlatformIcon）
 │   ├── screen/     # 页面
 │   │   ├── pickup/        # 取件列表 + 编辑取件码
 │   │   ├── package_record/# 包裹记录 + 编辑包裹
