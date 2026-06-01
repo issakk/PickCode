@@ -15,6 +15,7 @@ class MatchEngine {
         val enabledRules = rules.filter { it.enabled }
 
         for (rule in enabledRules) {
+            if (rule.keyword.isNotBlank() && !content.contains(rule.keyword)) continue
             for (field in listOf("code", "express", "address")) {
                 val currentValue = when (field) {
                     "code" -> info.codes.isNotEmpty()

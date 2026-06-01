@@ -55,6 +55,17 @@ fun MatchSettingsScreen(
                 shape = RoundedCornerShape(8.dp)
             )
 
+            // Keyword filter
+            OutlinedTextField(
+                value = uiState.keyword,
+                onValueChange = { viewModel.updateKeyword(it) },
+                label = { Text("关键词筛选（短信包含此词才匹配）") },
+                placeholder = { Text("如：取件码") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(8.dp)
+            )
+
             // Match type toggle
             Row(
                 modifier = Modifier.fillMaxWidth(),

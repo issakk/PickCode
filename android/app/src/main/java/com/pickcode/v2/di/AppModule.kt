@@ -2,6 +2,8 @@ package com.pickcode.v2.di
 
 import android.content.Context
 import androidx.room.Room
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import com.pickcode.v2.data.datastore.SettingsDataStore
 import com.pickcode.v2.data.local.AppDatabase
 import com.pickcode.v2.data.local.dao.MatchRuleDao
@@ -25,10 +27,18 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object AppModule {
 
+    private val MIGRATION_1_2 = object : Migration(1, 2) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE match_rules ADD COLUMN keyword TEXT NOT NULL DEFAULT ''")
+        }
+    }
+
     @Provides
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
-        Room.databaseBuilder(context, AppDatabase::class.java, "pickcode.db").build()
+        Room.databaseBuilder(context, AppDatabase::class.java, "pickcode.db")
+            .addMigrations(MIGRATION_1_2)
+            .build()
 
     @Provides
     fun providePackageCodeDao(db: AppDatabase): PackageCodeDao = db.packageCodeDao()

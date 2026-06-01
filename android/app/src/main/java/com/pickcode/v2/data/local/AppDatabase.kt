@@ -13,7 +13,7 @@ import com.pickcode.v2.data.local.entity.PackageRecordEntity
 
 @Database(
     entities = [PackageCodeEntity::class, PackageRecordEntity::class, MatchRuleEntity::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

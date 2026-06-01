@@ -25,6 +25,7 @@ data class MatchSettingsUiState(
     val ruleName: String = "",
     val smsContent: String = "",
     val matchType: String = "startEnd",
+    val keyword: String = "",
     val fieldStarts: Map<String, String> = mapOf("code" to "", "express" to "", "address" to ""),
     val fieldEnds: Map<String, String> = mapOf("code" to "", "express" to "", "address" to ""),
     val fieldPatterns: Map<String, String> = mapOf("code" to "", "express" to "", "address" to ""),
@@ -59,6 +60,7 @@ class MatchSettingsViewModel @Inject constructor(
                         ruleName = rule.name,
                         smsContent = rule.smsContent,
                         matchType = rule.matchType,
+                        keyword = rule.keyword,
                         fieldStarts = mapOf(
                             "code" to rule.rules.code.start,
                             "express" to rule.rules.express.start,
@@ -84,6 +86,7 @@ class MatchSettingsViewModel @Inject constructor(
     fun updateRuleName(v: String) { _uiState.update { it.copy(ruleName = v) } }
     fun updateSmsContent(v: String) { _uiState.update { updateMatchResults(it.copy(smsContent = v)) } }
     fun updateMatchType(v: String) { _uiState.update { updateMatchResults(it.copy(matchType = v)) } }
+    fun updateKeyword(v: String) { _uiState.update { it.copy(keyword = v) } }
     fun updateFieldStart(field: String, v: String) {
         _uiState.update { updateMatchResults(it.copy(fieldStarts = it.fieldStarts + (field to v))) }
     }
@@ -227,7 +230,8 @@ $smsContent"""
                 rules = rules,
                 smsContent = state.smsContent,
                 enabled = true,
-                createTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+                createTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
+                keyword = state.keyword
             )
             repository.insert(rule)
         }

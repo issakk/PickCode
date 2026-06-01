@@ -34,11 +34,11 @@ class MatchRuleRepository @Inject constructor(
 private fun MatchRuleEntity.toDomain() = MatchRule(
     id = id, name = name, matchType = matchType,
     rules = Json.decodeFromString(rulesJson),
-    smsContent = smsContent, enabled = enabled, createTime = createTime
+    smsContent = smsContent, enabled = enabled, createTime = createTime, keyword = keyword
 )
 
 private fun MatchRule.toEntity() = MatchRuleEntity(
     id = id, name = name, matchType = matchType,
     rulesJson = Json.encodeToString(rules),
-    smsContent = smsContent, enabled = enabled, createTime = createTime
+    smsContent = smsContent, enabled = enabled, createTime = createTime, keyword = keyword
 )

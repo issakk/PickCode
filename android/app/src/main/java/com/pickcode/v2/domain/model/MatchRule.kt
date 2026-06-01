@@ -23,7 +23,8 @@ data class MatchRule(
     val rules: RuleSet,
     val smsContent: String = "",
     val enabled: Boolean = true,
-    val createTime: String
+    val createTime: String,
+    val keyword: String = ""
 ) {
     fun getFieldConfig(field: String): FieldConfig = when (field) {
         "code" -> rules.code

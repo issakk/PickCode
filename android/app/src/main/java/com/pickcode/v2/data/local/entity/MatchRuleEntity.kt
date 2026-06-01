@@ -11,5 +11,6 @@ data class MatchRuleEntity(
     val rulesJson: String,
     val smsContent: String = "",
     val enabled: Boolean = true,
-    val createTime: String
+    val createTime: String,
+    val keyword: String = ""
 )
