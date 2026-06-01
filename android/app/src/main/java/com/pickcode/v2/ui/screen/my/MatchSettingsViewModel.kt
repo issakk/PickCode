@@ -101,7 +101,12 @@ class MatchSettingsViewModel @Inject constructor(
             val result = if (state.matchType == "regex") {
                 val pattern = state.fieldPatterns[field] ?: ""
                 if (pattern.isEmpty()) ""
-                else try { Regex(pattern).find(state.smsContent)?.groupValues?.getOrNull(1)?.trim() ?: "" } catch (_: Exception) { "" }
+                else try {
+                    val matches = Regex(pattern).findAll(state.smsContent)
+                        .mapNotNull { it.groupValues.getOrNull(1)?.trim()?.takeIf { v -> v.isNotEmpty() } }
+                        .toList()
+                    if (field == "code") matches.joinToString(", ") else matches.firstOrNull() ?: ""
+                } catch (_: Exception) { "" }
             } else {
                 val start = state.fieldStarts[field] ?: ""
                 val end = state.fieldEnds[field] ?: ""
@@ -143,9 +148,10 @@ class MatchSettingsViewModel @Inject constructor(
 
                 val prompt = """以下是快递取件短信，请为取件码、快递名称、地址分别生成一个JavaScript正则表达式。
 要求：
-1. 每个正则必须使用捕获组 () 来提取目标内容
-2. 返回严格的JSON格式，不要包含任何其他文字
-3. 如果某个字段无法从短信中提取，对应值设为空字符串
+1. 每个正则必须使用捕获组 () 来提取目标内容，正则不要包含全局标志（如 /g）
+2. 短信可能包含多个取件码（如 A-1-1001, A-2-1002），取件码正则需能匹配到每条短信内容中所有的取件码（例如匹配 40-2-4693 也匹配 40-2-3225）
+3. 返回严格的JSON格式，不要包含任何其他文字
+4. 如果某个字段无法从短信中提取，对应值设为空字符串
 返回格式：
 {"code":"正则表达式","express":"正则表达式","address":"正则表达式"}
 短信内容：

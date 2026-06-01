@@ -171,20 +171,22 @@ class PickupListViewModel @Inject constructor(
                 for (msg in messages) {
                     LogBuffer.d("PickCode", "短信: ${msg.content.take(80)}")
                     val info = matchEngine.extractInfo(msg.content, rules)
-                    LogBuffer.d("PickCode", "匹配结果: code=${info.code}, express=${info.express}, address=${info.address}")
-                    if (info.code.isNotEmpty() && info.code !in existingCodes) {
-                        repository.insert(
-                            PackageCode(
-                                code = info.code,
-                                date = msg.sendDate,
-                                sendDate = now,
-                                company = info.express.ifEmpty { "未知快递" },
-                                address = info.address.ifEmpty { "未知地址" },
-                                isManual = false
+                    LogBuffer.d("PickCode", "匹配结果: codes=${info.codes}, express=${info.express}, address=${info.address}")
+                    for (code in info.codes) {
+                        if (code.isNotEmpty() && code !in existingCodes) {
+                            repository.insert(
+                                PackageCode(
+                                    code = code,
+                                    date = msg.sendDate,
+                                    sendDate = now,
+                                    company = info.express.ifEmpty { "未知快递" },
+                                    address = info.address.ifEmpty { "未知地址" },
+                                    isManual = false
+                                )
                             )
-                        )
-                        existingCodes.add(info.code)
-                        addedCount++
+                            existingCodes.add(code)
+                            addedCount++
+                        }
                     }
                 }
 

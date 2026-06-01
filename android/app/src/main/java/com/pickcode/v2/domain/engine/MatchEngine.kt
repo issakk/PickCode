@@ -5,7 +5,7 @@ import com.pickcode.v2.domain.model.MatchRule
 class MatchEngine {
 
     data class ExtractedInfo(
-        val code: String = "",
+        val codes: List<String> = emptyList(),
         val express: String = "",
         val address: String = ""
     )
@@ -17,49 +17,51 @@ class MatchEngine {
         for (rule in enabledRules) {
             for (field in listOf("code", "express", "address")) {
                 val currentValue = when (field) {
-                    "code" -> info.code
+                    "code" -> info.codes.isNotEmpty()
                     "express" -> info.express
                     else -> info.address
                 }
-                if (currentValue.isNotEmpty()) continue
+                if (currentValue is String && currentValue.isNotEmpty()) continue
+                if (currentValue is Boolean && currentValue) continue
 
                 val fieldConfig = rule.getFieldConfig(field)
-                val result = if (rule.matchType == "regex") {
-                    matchRegex(content, fieldConfig.pattern)
+                val results = if (rule.matchType == "regex") {
+                    matchRegexAll(content, fieldConfig.pattern)
                 } else {
-                    matchStartEnd(content, fieldConfig.start, fieldConfig.end)
+                    matchStartEndAll(content, fieldConfig.start, fieldConfig.end)
                 }
 
-                if (result.isNotEmpty()) {
+                if (results.isNotEmpty()) {
                     info = when (field) {
-                        "code" -> info.copy(code = result)
-                        "express" -> info.copy(express = result)
-                        else -> info.copy(address = result)
+                        "code" -> info.copy(codes = results)
+                        "express" -> info.copy(express = results.first())
+                        else -> info.copy(address = results.first())
                     }
                 }
             }
-            if (info.code.isNotEmpty() && info.express.isNotEmpty() && info.address.isNotEmpty()) break
+            if (info.codes.isNotEmpty() && info.express.isNotEmpty() && info.address.isNotEmpty()) break
         }
         return info
     }
 
-    private fun matchStartEnd(content: String, start: String, end: String): String {
-        if (start.isEmpty() || end.isEmpty()) return ""
+    private fun matchStartEndAll(content: String, start: String, end: String): List<String> {
+        if (start.isEmpty() || end.isEmpty()) return emptyList()
         val startIdx = content.indexOf(start)
-        if (startIdx == -1) return ""
+        if (startIdx == -1) return emptyList()
         val endIdx = content.indexOf(end, startIdx + start.length)
-        if (endIdx == -1) return ""
-        return content.substring(startIdx + start.length, endIdx).trim()
+        if (endIdx == -1) return emptyList()
+        return listOf(content.substring(startIdx + start.length, endIdx).trim())
     }
 
-    private fun matchRegex(content: String, pattern: String): String {
-        if (pattern.isEmpty()) return ""
+    private fun matchRegexAll(content: String, pattern: String): List<String> {
+        if (pattern.isEmpty()) return emptyList()
         return try {
             val regex = Regex(pattern)
-            val match = regex.find(content)
-            match?.groupValues?.getOrNull(1)?.trim() ?: ""
+            regex.findAll(content).mapNotNull { match ->
+                match.groupValues.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
+            }.toList()
         } catch (e: Exception) {
-            ""
+            emptyList()
         }
     }
 }
