@@ -108,7 +108,7 @@ fun MyScreen(
 
         // Version
         Text(
-            text = "v3.0.0",
+            text = "v${com.pickcode.v2.BuildConfig.VERSION_NAME}",
             fontSize = 12.sp,
             color = colorScheme.outline,
             modifier = Modifier.align(Alignment.CenterHorizontally)

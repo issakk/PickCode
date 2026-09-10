@@ -2,7 +2,6 @@ package com.pickcode.v2.domain.engine
 
 import android.content.Context
 import android.net.Uri
-import com.pickcode.v2.ui.util.LogBuffer
 import com.pickcode.v2.ui.util.parseTime
 import java.util.Calendar
 
@@ -16,31 +15,26 @@ class SmsReader(private val context: Context) {
             add(Calendar.DAY_OF_YEAR, -daysBack)
             set(Calendar.HOUR_OF_DAY, 0)
             set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 1)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }.timeInMillis
 
-        val uri = Uri.parse("content://sms/")
+        // 只读收件箱：content://sms/ 会把已发送、草稿也读出来
+        val uri = Uri.parse("content://sms/inbox")
         val selection = "date >= ?"
         val selectionArgs = arrayOf(startTime.toString())
         val cursor = context.contentResolver.query(uri, null, selection, selectionArgs, "date DESC")
-        LogBuffer.d("PickCode", "SMS查询: startTime=$startTime, daysBack=$daysBack, count=${cursor?.count ?: 0}")
 
         cursor?.use {
             val bodyIdx = it.getColumnIndex("body")
             val dateIdx = it.getColumnIndex("date")
             val addressIdx = it.getColumnIndex("address")
-            var count = 0
+            if (bodyIdx < 0 || dateIdx < 0) return emptyList()
             while (it.moveToNext()) {
                 val body = it.getString(bodyIdx) ?: continue
-                val smsDate = it.getLong(dateIdx)
-                val addr = it.getString(addressIdx)
-                if (count < 5) {
-                    LogBuffer.d("PickCode", "SMS[$count] date=$smsDate addr=$addr body=${body.take(60)}")
-                }
-                messages.add(SmsMessage(body, parseTime(smsDate), addr))
-                count++
+                val address = if (addressIdx >= 0) it.getString(addressIdx) else null
+                messages.add(SmsMessage(body, parseTime(it.getLong(dateIdx)), address))
             }
-            LogBuffer.d("PickCode", "SMS匹配数: $count")
         }
         return messages
     }

@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.pickcode.v2.ui.components.GradientHeader
+import kotlinx.coroutines.launch
 import com.pickcode.v2.ui.components.TagGrid
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -25,6 +26,7 @@ fun EditCodeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     val colorScheme = MaterialTheme.colorScheme
+    val scope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize()) {
         GradientHeader(title = "编辑取件码", onBack = { navController.popBackStack() })
@@ -107,10 +109,12 @@ fun EditCodeScreen(
             // Save button
             Button(
                 onClick = {
-                    if (viewModel.save()) {
-                        navController.popBackStack()
-                    } else {
-                        Toast.makeText(context, "请输入取件码", Toast.LENGTH_SHORT).show()
+                    scope.launch {
+                        if (viewModel.save()) {
+                            navController.popBackStack()
+                        } else {
+                            Toast.makeText(context, "请输入取件码", Toast.LENGTH_SHORT).show()
+                        }
                     }
                 },
                 modifier = Modifier.fillMaxWidth()

@@ -6,9 +6,6 @@ import com.pickcode.v2.domain.model.PackageCode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -22,6 +19,7 @@ class PackageCodeRepository @Inject constructor(
 
     suspend fun getById(id: Long): PackageCode? = dao.getById(id)?.toDomain()
 
+    /** 返回新行 id，重复（同 code + date）时返回 -1。 */
     suspend fun insert(code: PackageCode): Long = dao.insert(code.toEntity())
 
     suspend fun update(code: PackageCode) = dao.update(code.toEntity())
@@ -31,11 +29,6 @@ class PackageCodeRepository @Inject constructor(
     suspend fun deleteByIds(ids: List<Long>) = dao.deleteByIds(ids)
 
     suspend fun deleteAll() = dao.deleteAll()
-
-    suspend fun findByCodeAndDate(code: String, datePrefix: String): PackageCode? =
-        dao.findByCodeAndDate(code, datePrefix)?.toDomain()
-
-    suspend fun getStats(): Pair<Int, Int> = Pair(dao.getCount(), dao.getPickedCount())
 }
 
 private fun PackageCodeEntity.toDomain() = PackageCode(

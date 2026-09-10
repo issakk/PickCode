@@ -1,9 +1,13 @@
 package com.pickcode.v2.data.local.entity
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(tableName = "package_codes")
+@Entity(
+    tableName = "package_codes",
+    indices = [Index(value = ["code", "date"], unique = true)]
+)
 data class PackageCodeEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val code: String,

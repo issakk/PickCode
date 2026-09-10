@@ -25,6 +25,12 @@ fun ChangelogScreen(navController: NavHostController) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            VersionCard("v3.2.0", "2026-09-10", listOf(
+                "文本匹配模式也支持一条短信提取多个取件码",
+                "修复编辑取件码后返回列表不刷新的问题",
+                "修复编辑匹配规则会把已停用规则重新启用的问题",
+                "隐私：关闭云备份，短信只读收件箱"
+            ))
             VersionCard("v3.0.0", "2024-XX-XX", listOf(
                 "全新 Compose 原生版本",
                 "性能优化，启动更快",

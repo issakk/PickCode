@@ -22,7 +22,8 @@ cd android
 - **最低版本**: Android 7.0 (API 24)
 - **目标版本**: Android 14 (API 34)
 - **版本号**: `android/app/build.gradle.kts` 中 `versionCode`/`versionName`，更新时同步改两处
-- **无测试框架**: 项目未配置单元测试
+- **单元测试**: `./gradlew testDebugUnitTest`（覆盖 `MatchEngine`，CI 会跑）
+- **发布签名**: release 的 keystore 由环境变量 `RELEASE_KEYSTORE_PATH` / `RELEASE_KEYSTORE_PASSWORD` / `RELEASE_KEY_ALIAS` / `RELEASE_KEY_PASSWORD` 注入（CI 从 secrets 解码）；未配置时回落到仓库内 `app/debug.keystore`。换 key 后旧安装无法覆盖升级，用户必须先卸载
 
 ## Architecture
 
@@ -33,21 +34,20 @@ android/app/src/main/java/com/pickcode/v2/
 ├── data/
 │   ├── local/          # Room 数据库：AppDatabase、DAO、Entity、Converters
 │   ├── datastore/      # DataStore Preferences (AI 配置等)
-│   └── repository/     # Repository 层（MatchRule、PackageCode、PackageRecord）
+│   └── repository/     # Repository 层（MatchRule、PackageCode）
 ├── domain/
 │   ├── engine/         # MatchEngine (匹配引擎)、SmsReader (短信读取)
-│   └── model/          # 领域模型 (MatchRule、PackageCode、PackageRecord、AiConfig)
+│   └── model/          # 领域模型 (MatchRule、PackageCode)
 ├── di/                 # Hilt 模块 (AppModule)
 ├── navigation/         # Navigation Compose 路由定义 (Routes、AppNavigation)
 ├── ui/
 │   ├── screen/         # 页面 + ViewModel
 │   │   ├── main/       # MainScreen (底部 Tab 导航容器)
 │   │   ├── pickup/     # 取件码列表 + 编辑
-│   │   ├── package_record/ # 包裹记录 + 编辑
 │   │   └── my/         # 我的：匹配规则、AI 设置、FAQ、关于、更新日志
-│   ├── components/     # 公共组件 (CodeCard、TagGrid、PlatformIcon、GradientHeader)
+│   ├── components/     # 公共组件 (CodeCard、TagGrid、GradientHeader)
 │   ├── theme/          # Material 3 主题 (Color、Type、Theme)
-│   └── util/           # 工具类 (DateFormat、CodeFormat、Vibrate、DeepLink、LogBuffer)
+│   └── util/           # 工具类 (DateFormat、CodeFormat)
 ├── MainActivity.kt
 └── PickCodeApp.kt      # Application 入口 (@HiltAndroidApp)
 ```
@@ -63,7 +63,7 @@ android/app/src/main/java/com/pickcode/v2/
 
 ### 核心数据流
 
-- **Room 数据库**: `AppDatabase` 包含三张表 (`match_rules`、`package_codes`、`package_records`)
+- **Room 数据库**: `AppDatabase` 包含两张表 (`match_rules`、`package_codes`)，当前版本 3，schema 导出到 `android/app/schemas`（改表必须加 Migration 并同步 schema）
 - **DataStore**: 存储 AI 配置 (`SettingsDataStore`)
 - **Repository 模式**: ViewModel 通过 Repository 访问数据，Repository 封装 DAO 和 DataStore
 - **Hilt 注入**: 所有 ViewModel、Repository、Database 通过 Hilt 注入
@@ -74,13 +74,14 @@ android/app/src/main/java/com/pickcode/v2/
 
 - **两种匹配模式**: `start/end` 文本标记匹配 和 `regex` 正则表达式匹配
 - **提取三个字段**: `code`（取件码）、`express`（快递公司）、`address`（取件地址）
+- **多取件码**: 一条短信里的多个取件码都会被提取（start/end 与 regex 都支持），入库按 `(code, date)` 唯一索引去重
 - **短信读取**: `SmsReader.kt` 通过 Android ContentResolver 查询 `content://sms/inbox`
-- **权限**: 需要 `READ_SMS` 和 `RECEIVE_SMS` 权限（AndroidManifest.xml 已声明）
+- **权限**: 只需要 `READ_SMS`（AndroidManifest.xml 已声明）
 
 ### Navigation
 
-- **根导航**: `AppNavigation.kt` 定义全局路由（Main、EditCode、EditPackage、MatchRules 等）
-- **Tab 导航**: `MainScreen.kt` 内部嵌套 NavHost 管理三个 Tab 页面
+- **根导航**: `AppNavigation.kt` 定义全局路由（Main、EditCode、MatchRules、MatchSettings、AiSettings、Faq、About、Changelog）
+- **Tab 导航**: `MainScreen.kt` 内部嵌套 NavHost 管理两个 Tab 页面
 - **路由定义**: `Routes` object 集中管理所有路由常量和构建函数
 
 ## Key Conventions
@@ -90,7 +91,7 @@ android/app/src/main/java/com/pickcode/v2/
 - **ViewModel**: 每个 Screen 对应一个 ViewModel，通过 `hiltViewModel()` 注入
 - **协程**: 所有异步操作使用 Kotlin Coroutines + Flow
 - **序列化**: Kotlinx Serialization (Ktor Client 使用)
-- **触感反馈**: 使用 `Vibrate.kt` 工具类封装 `Vibrator` API
+- **列表刷新**: 取件码列表是「一次性查询 + 内存缓存」，所以编辑页保存后必须靠 `PickupListScreen` 的 `LifecycleResumeEffect` 调 `viewModel.reload()`；改这块逻辑时别把刷新删了
 - **日期格式**: `DateFormat.kt` 提供统一的时间格式化函数
 
 ## Proguard Rules

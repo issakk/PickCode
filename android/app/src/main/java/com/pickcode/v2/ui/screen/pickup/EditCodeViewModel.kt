@@ -88,22 +88,21 @@ class EditCodeViewModel @Inject constructor(
         }
     }
 
-    fun save(): Boolean {
+    /** suspend：等写库真正完成再由页面 popBackStack，否则 viewModelScope 会随页面销毁被取消，编辑可能丢。 */
+    suspend fun save(): Boolean {
         val state = _uiState.value
         if (state.code.isBlank()) return false
-        viewModelScope.launch {
-            if (codeId > 0) {
-                repository.getById(codeId)?.let { existing ->
-                    repository.update(
-                        existing.copy(
-                            code = state.code,
-                            company = state.company.ifEmpty { "手动添加" },
-                            tags = state.selectedTags,
-                            remark = state.remark,
-                            isPicked = state.isPicked
-                        )
+        if (codeId > 0) {
+            repository.getById(codeId)?.let { existing ->
+                repository.update(
+                    existing.copy(
+                        code = state.code,
+                        company = state.company.ifEmpty { "手动添加" },
+                        tags = state.selectedTags,
+                        remark = state.remark,
+                        isPicked = state.isPicked
                     )
-                }
+                )
             }
         }
         return true

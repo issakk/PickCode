@@ -14,13 +14,11 @@ import com.pickcode.v2.ui.screen.my.ChangelogScreen
 import com.pickcode.v2.ui.screen.my.FaqScreen
 import com.pickcode.v2.ui.screen.my.MatchRulesScreen
 import com.pickcode.v2.ui.screen.my.MatchSettingsScreen
-import com.pickcode.v2.ui.screen.package_record.EditPackageScreen
 import com.pickcode.v2.ui.screen.pickup.EditCodeScreen
 
 object Routes {
     const val MAIN = "main"
     const val EDIT_CODE = "edit_code/{codeId}"
-    const val EDIT_PACKAGE = "edit_package?id={packageId}&type={type}"
     const val MATCH_RULES = "match_rules"
     const val MATCH_SETTINGS = "match_settings?mode={mode}&id={ruleId}"
     const val AI_SETTINGS = "ai_settings"
@@ -29,10 +27,6 @@ object Routes {
     const val CHANGELOG = "changelog"
 
     fun editCode(codeId: Long) = "edit_code/$codeId"
-    fun editPackage(packageId: Long = -1, type: String = "add"): String {
-        return if (packageId == -1L) "edit_package?type=$type"
-        else "edit_package?id=$packageId&type=$type"
-    }
     fun matchSettings(mode: String = "add", ruleId: String = "") =
         "match_settings?mode=$mode&id=$ruleId"
 }
@@ -49,16 +43,6 @@ fun AppNavigation(navController: NavHostController = rememberNavController()) {
             arguments = listOf(navArgument("codeId") { type = NavType.LongType })
         ) {
             EditCodeScreen(navController = navController)
-        }
-
-        composable(
-            Routes.EDIT_PACKAGE,
-            arguments = listOf(
-                navArgument("packageId") { type = NavType.LongType; defaultValue = -1L },
-                navArgument("type") { type = NavType.StringType; defaultValue = "add" }
-            )
-        ) {
-            EditPackageScreen(navController = navController)
         }
 
         composable(Routes.MATCH_RULES) {

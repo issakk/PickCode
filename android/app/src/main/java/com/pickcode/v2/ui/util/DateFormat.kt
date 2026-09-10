@@ -1,7 +1,6 @@
 package com.pickcode.v2.ui.util
 
 import java.text.SimpleDateFormat
-import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -17,14 +16,4 @@ fun formatDateChinese(dateStr: String): String {
     } catch (e: Exception) {
         dateStr
     }
-}
-
-fun todayString(): String {
-    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-    return sdf.format(Date())
-}
-
-fun todayDatePrefix(): String {
-    val sdf = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    return sdf.format(Date())
 }

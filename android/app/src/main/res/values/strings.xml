@@ -2,6 +2,5 @@
 <resources>
     <string name="app_name">取件码</string>
     <string name="tab_pickup">取件列表</string>
-    <string name="tab_packages">包裹记录</string>
     <string name="tab_my">我的</string>
 </resources>

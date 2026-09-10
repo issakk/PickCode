@@ -31,6 +31,7 @@ data class MatchSettingsUiState(
     val fieldPatterns: Map<String, String> = mapOf("code" to "", "express" to "", "address" to ""),
     val matchResults: Map<String, String> = emptyMap(),
     val aiLoading: Boolean = false,
+    val enabled: Boolean = true,
     val isEdit: Boolean = false
 ) {
     fun getFieldStart(field: String) = fieldStarts[field] ?: ""
@@ -76,6 +77,7 @@ class MatchSettingsViewModel @Inject constructor(
                             "express" to rule.rules.express.pattern,
                             "address" to rule.rules.address.pattern
                         ),
+                        enabled = rule.enabled,
                         isEdit = true
                     ))
                 }
@@ -97,38 +99,41 @@ class MatchSettingsViewModel @Inject constructor(
         _uiState.update { updateMatchResults(it.copy(fieldPatterns = it.fieldPatterns + (field to v))) }
     }
 
+    /** 预览复用 MatchEngine，避免预览和实际匹配两套逻辑漂移。 */
     private fun updateMatchResults(state: MatchSettingsUiState): MatchSettingsUiState {
         if (state.smsContent.isBlank()) return state.copy(matchResults = emptyMap())
-        val results = mutableMapOf<String, String>()
-        for (field in listOf("code", "express", "address")) {
-            val result = if (state.matchType == "regex") {
-                val pattern = state.fieldPatterns[field] ?: ""
-                if (pattern.isEmpty()) ""
-                else try {
-                    val matches = Regex(pattern).findAll(state.smsContent)
-                        .mapNotNull { it.groupValues.getOrNull(1)?.trim()?.takeIf { v -> v.isNotEmpty() } }
-                        .toList()
-                    if (field == "code") matches.joinToString(", ") else matches.firstOrNull() ?: ""
-                } catch (_: Exception) { "" }
-            } else {
-                val start = state.fieldStarts[field] ?: ""
-                val end = state.fieldEnds[field] ?: ""
-                if (start.isEmpty() || end.isEmpty()) ""
-                else {
-                    val startIdx = state.smsContent.indexOf(start)
-                    if (startIdx == -1) ""
-                    else {
-                        val endIdx = state.smsContent.indexOf(end, startIdx + start.length)
-                        if (endIdx == -1) ""
-                        else state.smsContent.substring(startIdx + start.length, endIdx).trim()
-                    }
-                }
-            }
-            results[field] = result
-        }
-        return state.copy(matchResults = results)
+        val rule = MatchRule(
+            id = "preview",
+            name = "preview",
+            matchType = state.matchType,
+            rules = RuleSet(
+                code = FieldConfig(
+                    start = state.getFieldStart("code"),
+                    end = state.getFieldEnd("code"),
+                    pattern = state.getFieldPattern("code")
+                ),
+                express = FieldConfig(
+                    start = state.getFieldStart("express"),
+                    end = state.getFieldEnd("express"),
+                    pattern = state.getFieldPattern("express")
+                ),
+                address = FieldConfig(
+                    start = state.getFieldStart("address"),
+                    end = state.getFieldEnd("address"),
+                    pattern = state.getFieldPattern("address")
+                )
+            ),
+            createTime = ""
+        )
+        val info = matchEngine.extractInfo(state.smsContent, listOf(rule))
+        return state.copy(
+            matchResults = mapOf(
+                "code" to info.codes.joinToString(", "),
+                "express" to info.express,
+                "address" to info.address
+            )
+        )
     }
-
     fun aiGenerate(context: Context) {
         viewModelScope.launch {
             _uiState.update { it.copy(aiLoading = true) }
@@ -229,7 +234,7 @@ $smsContent"""
                 matchType = state.matchType,
                 rules = rules,
                 smsContent = state.smsContent,
-                enabled = true,
+                enabled = state.enabled, // 编辑时保留原有的启用状态
                 createTime = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date()),
                 keyword = state.keyword
             )

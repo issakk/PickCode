@@ -45,13 +45,21 @@ class MatchEngine {
         return info
     }
 
+    /** start/end 模式：一条短信里可能有多组取件码，逐组提取到找不到为止。 */
     private fun matchStartEndAll(content: String, start: String, end: String): List<String> {
         if (start.isEmpty() || end.isEmpty()) return emptyList()
-        val startIdx = content.indexOf(start)
-        if (startIdx == -1) return emptyList()
-        val endIdx = content.indexOf(end, startIdx + start.length)
-        if (endIdx == -1) return emptyList()
-        return listOf(content.substring(startIdx + start.length, endIdx).trim())
+        val results = mutableListOf<String>()
+        var from = 0
+        while (true) {
+            val startIdx = content.indexOf(start, from)
+            if (startIdx == -1) break
+            val endIdx = content.indexOf(end, startIdx + start.length)
+            if (endIdx == -1) break
+            val value = content.substring(startIdx + start.length, endIdx).trim()
+            if (value.isNotEmpty()) results.add(value)
+            from = endIdx + end.length
+        }
+        return results.distinct()
     }
 
     private fun matchRegexAll(content: String, pattern: String): List<String> {
@@ -60,7 +68,7 @@ class MatchEngine {
             val regex = Regex(pattern)
             regex.findAll(content).mapNotNull { match ->
                 match.groupValues.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
-            }.toList()
+            }.distinct().toList()
         } catch (e: Exception) {
             emptyList()
         }

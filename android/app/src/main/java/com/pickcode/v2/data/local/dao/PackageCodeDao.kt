@@ -15,10 +15,8 @@ interface PackageCodeDao {
     @Query("SELECT * FROM package_codes WHERE id = :id")
     suspend fun getById(id: Long): PackageCodeEntity?
 
-    @Query("SELECT * FROM package_codes WHERE code = :code AND date LIKE :datePrefix || '%'")
-    suspend fun findByCodeAndDate(code: String, datePrefix: String): PackageCodeEntity?
-
-    @Insert
+    /** 同 (code, date) 已存在时返回 -1，依赖唯一索引拦截重复入库。 */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insert(entity: PackageCodeEntity): Long
 
     @Update
@@ -32,10 +30,4 @@ interface PackageCodeDao {
 
     @Query("DELETE FROM package_codes")
     suspend fun deleteAll()
-
-    @Query("SELECT COUNT(*) FROM package_codes")
-    suspend fun getCount(): Int
-
-    @Query("SELECT COUNT(*) FROM package_codes WHERE isPicked = 1")
-    suspend fun getPickedCount(): Int
 }

@@ -2,18 +2,16 @@ package com.pickcode.v2.ui.screen.pickup
 
 import android.content.Context
 import android.widget.Toast
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pickcode.v2.data.repository.MatchRuleRepository
 import com.pickcode.v2.data.repository.PackageCodeRepository
 import com.pickcode.v2.domain.engine.MatchEngine
 import com.pickcode.v2.domain.engine.SmsReader
-import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.Stable
 import com.pickcode.v2.domain.model.PackageCode
-import com.pickcode.v2.ui.util.LogBuffer
 import com.pickcode.v2.ui.util.formatDateChinese
-import com.pickcode.v2.ui.util.todayString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,8 +20,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.text.SimpleDateFormat
-import java.util.*
 import javax.inject.Inject
 
 @Immutable
@@ -43,6 +39,12 @@ data class PickupListUiState(
     val isLoading: Boolean = false
 )
 
+private sealed interface MatchOutcome {
+    data object NoRules : MatchOutcome
+    data class Failed(val message: String) : MatchOutcome
+    data class Done(val addedCount: Int) : MatchOutcome
+}
+
 @HiltViewModel
 class PickupListViewModel @Inject constructor(
     private val repository: PackageCodeRepository,
@@ -55,6 +57,11 @@ class PickupListViewModel @Inject constructor(
     val uiState: StateFlow<PickupListUiState> = _uiState.asStateFlow()
 
     init {
+        reload()
+    }
+
+    /** 重新从数据库读取。编辑页返回（onResume）时调用，否则列表会停留在旧数据。 */
+    fun reload() {
         viewModelScope.launch { refresh() }
     }
 
@@ -89,29 +96,6 @@ class PickupListViewModel @Inject constructor(
             }
         }
         return result
-    }
-
-    fun addCode(codeText: String) {
-        viewModelScope.launch {
-            val todayPrefix = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            val existing = withContext(Dispatchers.IO) { repository.findByCodeAndDate(codeText, todayPrefix) }
-            if (existing != null) return@launch
-            val now = todayString()
-            val newCode = PackageCode(
-                code = codeText,
-                date = now,
-                sendDate = now,
-                company = "手动添加",
-                address = "手动添加",
-                isManual = true
-            )
-            val id = withContext(Dispatchers.IO) { repository.insert(newCode) }
-            val savedCode = newCode.copy(id = id)
-            _uiState.update { current ->
-                val updatedCodes = listOf(savedCode) + current.codes
-                current.copy(codes = updatedCodes, flatItems = buildFlatItems(updatedCodes))
-            }
-        }
     }
 
     fun togglePicked(item: PackageCode) {
@@ -150,57 +134,59 @@ class PickupListViewModel @Inject constructor(
     fun autoMatch(context: Context, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            try {
-                val rules = matchRuleRepository.getEnabled()
-                LogBuffer.d("PickCode", "启用规则数: ${rules.size}")
-                if (rules.isEmpty()) {
+            // 读短信 + 跑正则 + 入库全部丢到 IO 线程，避免正则回溯卡住主线程
+            val outcome = withContext(Dispatchers.IO) { matchSms() }
+            _uiState.update { it.copy(isLoading = false) }
+
+            when (outcome) {
+                is MatchOutcome.NoRules ->
                     Toast.makeText(context, "请先添加匹配规则", Toast.LENGTH_SHORT).show()
-                    _uiState.update { it.copy(isLoading = false) }
-                    return@launch
-                }
-                for (r in rules) {
-                    LogBuffer.d("PickCode", "规则: ${r.name}, type=${r.matchType}, code.start=${r.rules.code.start}, code.end=${r.rules.code.end}, code.pattern=${r.rules.code.pattern}")
-                }
 
-                val messages = withContext(Dispatchers.IO) { smsReader.readRecentSms(4) }
-                LogBuffer.d("PickCode", "读取短信数: ${messages.size}")
-                val existingCodes = _uiState.value.codes.map { it.code }.toMutableSet()
-                val now = todayString()
-                var addedCount = 0
+                is MatchOutcome.Failed ->
+                    Toast.makeText(context, "读取短信失败: ${outcome.message}", Toast.LENGTH_SHORT).show()
 
-                for (msg in messages) {
-                    LogBuffer.d("PickCode", "短信: ${msg.content.take(80)}")
-                    val info = matchEngine.extractInfo(msg.content, rules)
-                    LogBuffer.d("PickCode", "匹配结果: codes=${info.codes}, express=${info.express}, address=${info.address}")
-                    for (code in info.codes) {
-                        if (code.isNotEmpty() && code !in existingCodes) {
-                            repository.insert(
-                                PackageCode(
-                                    code = code,
-                                    date = msg.sendDate,
-                                    sendDate = now,
-                                    company = info.express.ifEmpty { "未知快递" },
-                                    address = info.address.ifEmpty { "未知地址" },
-                                    isManual = false
-                                )
-                            )
-                            existingCodes.add(code)
-                            addedCount++
-                        }
-                    }
+                is MatchOutcome.Done -> {
+                    refresh()
+                    Toast.makeText(
+                        context,
+                        if (outcome.addedCount > 0) "匹配到 ${outcome.addedCount} 个取件码" else "暂无匹配结果",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    if (outcome.addedCount > 0) onSuccess()
                 }
-
-                refresh()
-                val toastMsg = if (addedCount > 0) "匹配到 $addedCount 个取件码" else "暂无匹配结果"
-                Toast.makeText(context, toastMsg, Toast.LENGTH_SHORT).show()
-                if (addedCount > 0) {
-                    onSuccess()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(context, "读取短信失败: ${e.message}", Toast.LENGTH_SHORT).show()
-            } finally {
-                _uiState.update { it.copy(isLoading = false) }
             }
         }
+    }
+
+    private suspend fun matchSms(): MatchOutcome = try {
+        val rules = matchRuleRepository.getEnabled()
+        if (rules.isEmpty()) {
+            MatchOutcome.NoRules
+        } else {
+            val messages = smsReader.readRecentSms(4)
+            // (code, date) 去重：唯一索引兜底，这里只是省掉无用的 insert
+            val seen = _uiState.value.codes.mapTo(mutableSetOf()) { it.code to it.date }
+            var added = 0
+            for (msg in messages) {
+                val info = matchEngine.extractInfo(msg.content, rules)
+                for (code in info.codes) {
+                    if (code.isEmpty() || !seen.add(code to msg.sendDate)) continue
+                    val id = repository.insert(
+                        PackageCode(
+                            code = code,
+                            date = msg.sendDate,
+                            sendDate = msg.sendDate,
+                            company = info.express.ifEmpty { "未知快递" },
+                            address = info.address.ifEmpty { "未知地址" },
+                            isManual = false
+                        )
+                    )
+                    if (id != -1L) added++ // -1 = 被唯一索引拦下的重复入库
+                }
+            }
+            MatchOutcome.Done(added)
+        }
+    } catch (e: Exception) {
+        MatchOutcome.Failed(e.message ?: "未知错误")
     }
 }

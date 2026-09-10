@@ -6,11 +6,9 @@
 
 - **短信自动匹配** — 读取短信，按规则提取取件码、快递公司、取件地址；匹配成功后自动回到列表顶部
 - **自定义匹配规则** — 支持 start/end 文本匹配、正则表达式、短信关键词初筛
-- **多取件码提取** — 支持一条短信匹配多个取件码，自动去重保存
-- **包裹记录** — 跟踪包裹状态，支持标签、备注、已取/未取标记
-- **平台图标识别** — 自动识别淘宝、京东、拼多多、抖音等平台来源
+- **多取件码提取** — 一条短信里的多个取件码都会提取（文本匹配与正则两种模式都支持），按取件码 + 日期去重保存
 - **AI 辅助** — 可配置 AI 接口辅助生成匹配规则
-- **本地存储** — 所有数据存本地 Room 数据库，不上传服务器
+- **本地存储** — 所有数据存本地 Room 数据库、不上传服务器；已关闭系统云备份（`allowBackup=false`），短信只读收件箱
 
 ## 技术栈
 
@@ -33,13 +31,12 @@ android/app/src/main/java/com/pickcode/v2/
 ├── di/             # Hilt 依赖注入模块
 ├── navigation/     # Navigation Compose 路由
 ├── ui/
-│   ├── components/ # 公共组件（CodeCard、TagGrid、PlatformIcon）
+│   ├── components/ # 公共组件（CodeCard、TagGrid、GradientHeader）
 │   ├── screen/     # 页面
 │   │   ├── pickup/        # 取件列表 + 编辑取件码
-│   │   ├── package_record/# 包裹记录 + 编辑包裹
 │   │   └── my/            # 我的：匹配规则、AI 设置、FAQ、关于
 │   ├── theme/      # Material 3 主题
-│   └── util/       # 工具类（日期格式、震动、深链接）
+│   └── util/       # 工具类（日期格式、取件码格式）
 └── PickCodeApp.kt  # Application 入口
 ```
 
@@ -50,10 +47,15 @@ android/app/src/main/java/com/pickcode/v2/
 ```bash
 cd android
 ./gradlew assembleDebug   # 构建 debug APK
-./gradlew assembleRelease # 构建 release APK
+./gradlew testDebugUnitTest # 跑单元测试（MatchEngine）
+./gradlew assembleRelease  # 构建 release APK
 ```
 
 最低支持 Android 7.0 (API 24)，目标版本 Android 14 (API 34)。
+
+## 发布签名
+
+release APK 默认用仓库里的 `android/app/debug.keystore` 签名。换正式 key 时配置 `RELEASE_KEYSTORE_PATH`（keystore 路径）、`RELEASE_KEYSTORE_PASSWORD`、`RELEASE_KEY_ALIAS`、`RELEASE_KEY_PASSWORD` 四个环境变量；GitHub Actions 用 `RELEASE_KEYSTORE_BASE64`（keystore 的 base64）等 secrets 注入。注意：换 key 后旧版本无法覆盖安装，用户需先卸载。
 
 ## 许可证
 

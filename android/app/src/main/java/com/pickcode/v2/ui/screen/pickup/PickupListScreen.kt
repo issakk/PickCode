@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.navigation.NavHostController
 import com.pickcode.v2.domain.model.PackageCode
 import com.pickcode.v2.navigation.Routes
@@ -41,6 +42,12 @@ fun PickupListScreen(
     val colorScheme = MaterialTheme.colorScheme
     val listState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
+
+    // 从编辑页返回时重新读库，否则列表还是旧数据
+    LifecycleResumeEffect(Unit) {
+        viewModel.reload()
+        onPauseOrDispose { }
+    }
     var showDeleteDialog by remember { mutableStateOf<PackageCode?>(null) }
     var showDateDeleteDialog by remember { mutableStateOf<String?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
