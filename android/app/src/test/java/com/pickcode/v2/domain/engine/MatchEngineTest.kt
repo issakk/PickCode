@@ -15,14 +15,16 @@ class MatchEngineTest {
         code: FieldConfig = FieldConfig(),
         express: FieldConfig = FieldConfig(),
         address: FieldConfig = FieldConfig(),
-        keyword: String = ""
+        keyword: String = "",
+        enabled: Boolean = true
     ) = MatchRule(
         id = "t",
         name = "t",
         matchType = matchType,
         rules = RuleSet(code = code, express = express, address = address),
         createTime = "",
-        keyword = keyword
+        keyword = keyword,
+        enabled = enabled
     )
 
     @Test
