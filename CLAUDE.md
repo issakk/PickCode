@@ -88,7 +88,7 @@ android/app/src/main/java/com/pickcode/v2/
 
 - **样式**: Material 3 / Google 原生风：品牌蓝 (#2563EB) 只当强调色（FAB、选中态、链接），页面与顶栏用 `colorScheme.background`，卡片用 `surface` + `outlineVariant` 描边；字号/圆角一律取 `MaterialTheme.typography` / `.shapes`，不要硬编码 sp/dp 圆角
 - **顶部栏**: 二级页面用 `ui/components/AppTopBar.kt`（M3 TopAppBar），首页 Tab 用同文件的 `LargeTitleHeader`（24sp 大标题 + 右上角图标）。不要在页面里自建 header / 渐变头
-- **系统栏/键盘**: MainActivity 已 `enableEdgeToEdge()`，`MainScreen` 的 Scaffold 设了 `contentWindowInsets = WindowInsets(0)`，顶部 inset 由各页顶栏自己处理；独立全屏页（EditCode、MatchSettings、AiSettings、About、Faq、Changelog）必须自己加 `navigationBarsPadding()`，有输入框的还要 `imePadding()`；状态栏/导航栏图标明暗在 `PickCodeTheme` 里按主题设置，窗口底色由 `res/values{,-night}/colors.xml` 的 `window_background` 提供
+- **系统栏/键盘**: MainActivity 已 `enableEdgeToEdge()`；`MainScreen` 的 Scaffold 会给内容让出状态栏高度（首页大标题不要再自己叠 statusBars padding），二级页的 `AppTopBar` 自带 inset；独立全屏页（EditCode、MatchSettings、AiSettings、About、Faq、Changelog）必须自己加 `navigationBarsPadding()`，有输入框的还要 `imePadding()`；状态栏图标明暗在 `PickCodeTheme` 里按主题设置，窗口底色由 `res/values{,-night}/colors.xml` 的 `window_background` 提供，要跟 `colorScheme.background` 保持一致
 - **Compose**: 所有 UI 使用 Jetpack Compose，无 XML 布局
 - **ViewModel**: 每个 Screen 对应一个 ViewModel，通过 `hiltViewModel()` 注入
 - **协程**: 所有异步操作使用 Kotlin Coroutines + Flow

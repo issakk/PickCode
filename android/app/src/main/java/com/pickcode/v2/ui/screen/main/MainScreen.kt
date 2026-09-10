@@ -1,7 +1,6 @@
 package com.pickcode.v2.ui.screen.main
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Inventory2
 import androidx.compose.material.icons.outlined.Person
@@ -32,8 +31,6 @@ fun MainScreen(rootNavController: NavHostController) {
     val currentRoute = navBackStackEntry?.destination?.route
 
     Scaffold(
-        // 顶部 inset 交给各页面自己的顶栏处理（这样大标题能铺到状态栏下）
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             NavigationBar(
                 tonalElevation = 0.dp,
