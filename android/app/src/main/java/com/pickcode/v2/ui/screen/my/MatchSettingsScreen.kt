@@ -12,7 +12,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.pickcode.v2.ui.components.GradientHeader
+import com.pickcode.v2.ui.components.AppTopBar
 import com.pickcode.v2.ui.theme.successColor
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,7 +26,7 @@ fun MatchSettingsScreen(
     val colorScheme = MaterialTheme.colorScheme
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "匹配设置", onBack = { navController.popBackStack() })
+        AppTopBar(title = "匹配设置", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier

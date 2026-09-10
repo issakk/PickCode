@@ -9,12 +9,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.pickcode.v2.ui.components.GradientHeader
+import com.pickcode.v2.ui.components.AppTopBar
 
 @Composable
 fun FaqScreen(navController: NavHostController) {
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "常见问题", onBack = { navController.popBackStack() })
+        AppTopBar(title = "常见问题", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier

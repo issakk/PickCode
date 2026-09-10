@@ -45,7 +45,7 @@ android/app/src/main/java/com/pickcode/v2/
 │   │   ├── main/       # MainScreen (底部 Tab 导航容器)
 │   │   ├── pickup/     # 取件码列表 + 编辑
 │   │   └── my/         # 我的：匹配规则、AI 设置、FAQ、关于、更新日志
-│   ├── components/     # 公共组件 (CodeCard、TagGrid、GradientHeader)
+│   ├── components/     # 公共组件 (CodeCard、TagGrid、AppTopBar、LargeTitleHeader)
 │   ├── theme/          # Material 3 主题 (Color、Theme)，字体样式用 M3 默认
 │   └── util/           # 工具类 (DateFormat、CodeFormat)
 ├── MainActivity.kt
@@ -86,9 +86,9 @@ android/app/src/main/java/com/pickcode/v2/
 
 ## Key Conventions
 
-- **样式**: Material 3 Design System，品牌色蓝→紫 (渐变头 `GradientHeader`)，组件一律用 `MaterialTheme.colorScheme` / `.typography` / `.shapes`，不要在页面里硬编码字号和圆角
-- **顶部栏**: 所有页面统一用 `ui/components/GradientHeader.kt`（品牌渐变 + 白字，渐变铺到状态栏下），不要另写 TopAppBar 或自定义 header
-- **系统栏/键盘**: MainActivity 已 `enableEdgeToEdge()`；列表页的底部间距由 `MainScreen` 的 Scaffold 负责，独立全屏页（EditCode、MatchSettings、AiSettings、About、Faq、Changelog）必须自己加 `navigationBarsPadding()`，有输入框的还要 `imePadding()`
+- **样式**: Material 3 / Google 原生风：品牌蓝 (#2563EB) 只当强调色（FAB、选中态、链接），页面与顶栏用 `colorScheme.background`，卡片用 `surface` + `outlineVariant` 描边；字号/圆角一律取 `MaterialTheme.typography` / `.shapes`，不要硬编码 sp/dp 圆角
+- **顶部栏**: 二级页面用 `ui/components/AppTopBar.kt`（M3 TopAppBar），首页 Tab 用同文件的 `LargeTitleHeader`（24sp 大标题 + 右上角图标）。不要在页面里自建 header / 渐变头
+- **系统栏/键盘**: MainActivity 已 `enableEdgeToEdge()`，`MainScreen` 的 Scaffold 设了 `contentWindowInsets = WindowInsets(0)`，顶部 inset 由各页顶栏自己处理；独立全屏页（EditCode、MatchSettings、AiSettings、About、Faq、Changelog）必须自己加 `navigationBarsPadding()`，有输入框的还要 `imePadding()`；状态栏/导航栏图标明暗在 `PickCodeTheme` 里按主题设置，窗口底色由 `res/values{,-night}/colors.xml` 的 `window_background` 提供
 - **Compose**: 所有 UI 使用 Jetpack Compose，无 XML 布局
 - **ViewModel**: 每个 Screen 对应一个 ViewModel，通过 `hiltViewModel()` 注入
 - **协程**: 所有异步操作使用 Kotlin Coroutines + Flow
@@ -105,5 +105,5 @@ Release 构建启用 R8 混淆，规则在 `android/app/proguard-rules.pro`。�
 
 ## Common Issues
 
-- **资源文件格式**: `avatar.png` 实际为 WebP 格式，AAPT2 在 release 构建时会报错，已重命名为 `.webp`
+- **图形资源**: 界面全部用 Material 图标（`material-icons-extended`）+ 矢量，`res/drawable` 里的位图已清空，加图片前先想想能不能用图标
 - **滚动性能**: `CodeCard` 组件在列表中滚动时可能有卡顿，已通过隔离测试定位（commit 741ee89）

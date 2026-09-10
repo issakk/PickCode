@@ -31,7 +31,7 @@ android/app/src/main/java/com/pickcode/v2/
 ├── di/             # Hilt 依赖注入模块
 ├── navigation/     # Navigation Compose 路由
 ├── ui/
-│   ├── components/ # 公共组件（CodeCard、TagGrid、GradientHeader）
+│   ├── components/ # 公共组件（CodeCard、TagGrid、AppTopBar）
 │   ├── screen/     # 页面
 │   │   ├── pickup/        # 取件列表 + 编辑取件码
 │   │   └── my/            # 我的：匹配规则、AI 设置、FAQ、关于

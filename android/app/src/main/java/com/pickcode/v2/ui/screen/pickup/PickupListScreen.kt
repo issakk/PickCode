@@ -5,11 +5,14 @@ import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.AllInbox
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.LocationOn
@@ -28,7 +31,7 @@ import androidx.navigation.NavHostController
 import com.pickcode.v2.domain.model.PackageCode
 import com.pickcode.v2.navigation.Routes
 import com.pickcode.v2.ui.components.CodeCard
-import com.pickcode.v2.ui.components.GradientHeader
+import com.pickcode.v2.ui.components.LargeTitleHeader
 import kotlinx.coroutines.launch
 
 @Composable
@@ -48,6 +51,7 @@ fun PickupListScreen(
         onPauseOrDispose { }
     }
 
+    var menuOpen by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf<PackageCode?>(null) }
     var showDateDeleteDialog by remember { mutableStateOf<String?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
@@ -74,69 +78,98 @@ fun PickupListScreen(
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "取件码") {
-            if (uiState.codes.isNotEmpty()) {
-                IconButton(onClick = { showDeleteAllDialog = true }) {
-                    Icon(Icons.Outlined.DeleteSweep, contentDescription = "全部删除")
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            LargeTitleHeader(title = "取件码") {
+                if (uiState.codes.isNotEmpty()) {
+                    Box {
+                        IconButton(onClick = { menuOpen = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "更多操作")
+                        }
+                        if (menuOpen) {
+                            DropdownMenu(expanded = true, onDismissRequest = { menuOpen = false }) {
+                                DropdownMenuItem(
+                                    text = { Text("全部删除", color = colorScheme.error) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Outlined.DeleteSweep,
+                                            contentDescription = null,
+                                            tint = colorScheme.error
+                                        )
+                                    },
+                                    onClick = {
+                                        menuOpen = false
+                                        showDeleteAllDialog = true
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             }
-            IconButton(onClick = { requestSmsAndMatch() }) {
-                Icon(Icons.Outlined.Refresh, contentDescription = "扫描短信匹配")
+
+            if (uiState.isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
-        }
 
-        if (uiState.isLoading) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-        }
-
-        val flatItems = uiState.flatItems
-        if (flatItems.isEmpty() && !uiState.isLoading) {
-            EmptyPickupState(onScan = { requestSmsAndMatch() })
-        } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(
-                    items = flatItems,
-                    key = { item ->
+            val flatItems = uiState.flatItems
+            if (flatItems.isEmpty() && !uiState.isLoading) {
+                EmptyPickupState()
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    // 底部留出 FAB 的空间
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 96.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(
+                        items = flatItems,
+                        key = { item ->
+                            when (item) {
+                                is PickupListItem.DateHeader -> "date_${item.date}"
+                                is PickupListItem.AddressHeader -> "addr_${item.date}_${item.address}"
+                                is PickupListItem.Code -> "code_${item.item.id}"
+                            }
+                        },
+                        contentType = { item -> item::class }
+                    ) { item ->
                         when (item) {
-                            is PickupListItem.DateHeader -> "date_${item.date}"
-                            is PickupListItem.AddressHeader -> "addr_${item.date}_${item.address}"
-                            is PickupListItem.Code -> "code_${item.item.id}"
-                        }
-                    },
-                    contentType = { item -> item::class }
-                ) { item ->
-                    when (item) {
-                        is PickupListItem.DateHeader -> DateHeaderItem(
-                            date = item.date,
-                            pendingCount = item.pendingCount,
-                            onDelete = { showDateDeleteDialog = item.date },
-                            colorScheme = colorScheme
-                        )
-
-                        is PickupListItem.AddressHeader -> AddressHeaderItem(
-                            address = item.address,
-                            colorScheme = colorScheme
-                        )
-
-                        is PickupListItem.Code -> {
-                            val code = item.item
-                            CodeCard(
-                                item = code,
-                                onTogglePicked = remember(code) { { viewModel.togglePicked(code) } },
-                                onEdit = remember(code) { { rootNavController.navigate(Routes.editCode(code.id)) } },
-                                onDelete = remember(code) { { showDeleteDialog = code } }
+                            is PickupListItem.DateHeader -> DateHeaderItem(
+                                date = item.date,
+                                pendingCount = item.pendingCount,
+                                onDelete = { showDateDeleteDialog = item.date },
+                                colorScheme = colorScheme
                             )
+
+                            is PickupListItem.AddressHeader -> AddressHeaderItem(
+                                address = item.address,
+                                colorScheme = colorScheme
+                            )
+
+                            is PickupListItem.Code -> {
+                                val code = item.item
+                                CodeCard(
+                                    item = code,
+                                    onTogglePicked = remember(code) { { viewModel.togglePicked(code) } },
+                                    onEdit = remember(code) { { rootNavController.navigate(Routes.editCode(code.id)) } },
+                                    onDelete = remember(code) { { showDeleteDialog = code } }
+                                )
+                            }
                         }
                     }
                 }
             }
         }
+
+        ExtendedFloatingActionButton(
+            onClick = { requestSmsAndMatch() },
+            icon = { Icon(Icons.Outlined.Refresh, contentDescription = null) },
+            text = { Text("扫描短信") },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        )
     }
 
     // Delete confirmation dialogs
@@ -190,7 +223,7 @@ fun PickupListScreen(
 }
 
 @Composable
-private fun EmptyPickupState(onScan: () -> Unit) {
+private fun EmptyPickupState() {
     val colorScheme = MaterialTheme.colorScheme
     Column(
         modifier = Modifier
@@ -199,27 +232,28 @@ private fun EmptyPickupState(onScan: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            Icons.Outlined.AllInbox,
-            contentDescription = null,
-            tint = colorScheme.outline,
-            modifier = Modifier.size(56.dp)
-        )
-        Spacer(Modifier.height(16.dp))
+        Box(
+            modifier = Modifier
+                .size(88.dp)
+                .background(colorScheme.secondaryContainer, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Outlined.AllInbox,
+                contentDescription = null,
+                tint = colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(40.dp)
+            )
+        }
+        Spacer(Modifier.height(20.dp))
         Text("还没有取件码", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
-            text = "扫描最近 4 天的短信，按规则自动提取取件码",
-            style = MaterialTheme.typography.bodySmall,
+            text = "点右下角按钮，扫描最近 4 天的短信自动提取",
+            style = MaterialTheme.typography.bodyMedium,
             color = colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
-        Spacer(Modifier.height(24.dp))
-        Button(onClick = onScan, shape = MaterialTheme.shapes.small) {
-            Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(8.dp))
-            Text("扫描短信")
-        }
     }
 }
 
@@ -233,7 +267,7 @@ private fun DateHeaderItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp, bottom = 2.dp),
+            .padding(top = 12.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
@@ -272,7 +306,7 @@ private fun AddressHeaderItem(
     colorScheme: ColorScheme
 ) {
     Row(
-        modifier = Modifier.padding(start = 4.dp, top = 4.dp),
+        modifier = Modifier.padding(start = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(

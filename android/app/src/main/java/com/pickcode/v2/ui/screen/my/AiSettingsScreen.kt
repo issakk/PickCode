@@ -14,7 +14,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.pickcode.v2.ui.components.GradientHeader
+import com.pickcode.v2.ui.components.AppTopBar
 
 @Composable
 fun AiSettingsScreen(
@@ -27,7 +27,7 @@ fun AiSettingsScreen(
     var showKey by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "AI 设置", onBack = { navController.popBackStack() })
+        AppTopBar(title = "AI 设置", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier

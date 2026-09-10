@@ -39,6 +39,13 @@ private val LightColorScheme = lightColorScheme(
     onError = Color.White,
     errorContainer = Color(0xFFFEE2E2),
     onErrorContainer = Color(0xFF991B1B),
+    surfaceDim = Color(0xFFE2E8F0),
+    surfaceBright = Color(0xFFFFFFFF),
+    surfaceContainerLowest = Color(0xFFFFFFFF),
+    surfaceContainerLow = Color(0xFFF8FAFC),
+    surfaceContainer = Color(0xFFF1F5F9),
+    surfaceContainerHigh = Color(0xFFE9EEF5),
+    surfaceContainerHighest = Color(0xFFE2E8F0),
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -66,6 +73,13 @@ private val DarkColorScheme = darkColorScheme(
     onError = Color(0xFF7F1D1D),
     errorContainer = Color(0xFF991B1B),
     onErrorContainer = Color(0xFFFEE2E2),
+    surfaceDim = Color(0xFF0B1220),
+    surfaceBright = Color(0xFF334155),
+    surfaceContainerLowest = Color(0xFF0B1220),
+    surfaceContainerLow = Color(0xFF172033),
+    surfaceContainer = Color(0xFF1E293B),
+    surfaceContainerHigh = Color(0xFF293548),
+    surfaceContainerHighest = Color(0xFF334155),
 )
 
 /**
@@ -92,8 +106,10 @@ fun PickCodeTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            // 每个页面顶部都是品牌渐变头，状态栏图标固定用浅色
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            // 顶栏是 surface 纯色，所以浅色主题用深色状态栏图标、深色主题用浅色
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
         }
     }
 

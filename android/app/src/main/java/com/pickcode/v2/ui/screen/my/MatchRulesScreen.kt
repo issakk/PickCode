@@ -21,7 +21,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.pickcode.v2.domain.model.MatchRule
 import com.pickcode.v2.navigation.Routes
-import com.pickcode.v2.ui.components.GradientHeader
+import com.pickcode.v2.ui.components.AppTopBar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,7 +37,7 @@ fun MatchRulesScreen(
     var menuRule by remember { mutableStateOf<MatchRule?>(null) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "匹配规则", onBack = { navController.popBackStack() })
+        AppTopBar(title = "匹配规则", onBack = { navController.popBackStack() })
 
         if (rules.isEmpty()) {
             Column(

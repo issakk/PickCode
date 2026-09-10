@@ -9,12 +9,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.pickcode.v2.ui.components.GradientHeader
+import com.pickcode.v2.ui.components.AppTopBar
 
 @Composable
 fun AboutScreen(navController: NavHostController) {
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "软件介绍", onBack = { navController.popBackStack() })
+        AppTopBar(title = "软件介绍", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier

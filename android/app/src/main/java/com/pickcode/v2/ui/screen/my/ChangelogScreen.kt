@@ -9,14 +9,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.pickcode.v2.ui.components.GradientHeader
+import com.pickcode.v2.ui.components.AppTopBar
 
 @Composable
 fun ChangelogScreen(navController: NavHostController) {
     val colorScheme = MaterialTheme.colorScheme
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "更新记录", onBack = { navController.popBackStack() })
+        AppTopBar(title = "更新记录", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier

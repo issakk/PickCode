@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.pickcode.v2.ui.components.GradientHeader
+import com.pickcode.v2.ui.components.AppTopBar
 import kotlinx.coroutines.launch
 import com.pickcode.v2.ui.components.TagGrid
 
@@ -29,7 +29,7 @@ fun EditCodeScreen(
     val scope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        GradientHeader(title = "编辑取件码", onBack = { navController.popBackStack() })
+        AppTopBar(title = "编辑取件码", onBack = { navController.popBackStack() })
 
         Column(
             modifier = Modifier
