@@ -36,7 +36,7 @@ android/app/src/main/java/com/pickcode/v2/
 │   ├── datastore/      # DataStore Preferences (AI 配置等)
 │   └── repository/     # Repository 层（MatchRule、PackageCode）
 ├── domain/
-│   ├── engine/         # MatchEngine (匹配引擎)、SmsReader (短信读取)
+│   ├── engine/         # CodeImporter (文本→取件码→入库)、MatchEngine (匹配引擎)、SmsReader (短信读取)
 │   └── model/          # 领域模型 (MatchRule、PackageCode)
 ├── di/                 # Hilt 模块 (AppModule)
 ├── navigation/         # Navigation Compose 路由定义 (Routes、AppNavigation)
@@ -64,6 +64,7 @@ android/app/src/main/java/com/pickcode/v2/
 ### 核心数据流
 
 - **Room 数据库**: `AppDatabase` 包含两张表 (`match_rules`、`package_codes`)，当前版本 3，schema 导出到 `android/app/schemas`（改表必须加 Migration 并同步 schema）
+- **取件码入口**: 三个入口最终都走 `domain/engine/CodeImporter.kt` —— ①首页 FAB「扫描短信」扫最近 4 天短信；②`MainActivity` 处理 `ACTION_SEND`，别的 App 分享文本过来直接抽码；③`EditCodeScreen`（`codeId = 0`）手动添加。新加入口时别绕过它，去重/兜底都在那里
 - **DataStore**: 存储 AI 配置 (`SettingsDataStore`)
 - **Repository 模式**: ViewModel 通过 Repository 访问数据，Repository 封装 DAO 和 DataStore
 - **Hilt 注入**: 所有 ViewModel、Repository、Database 通过 Hilt 注入
@@ -75,6 +76,7 @@ android/app/src/main/java/com/pickcode/v2/
 - **两种匹配模式**: `start/end` 文本标记匹配 和 `regex` 正则表达式匹配
 - **提取三个字段**: `code`（取件码）、`express`（快递公司）、`address`（取件地址）
 - **多取件码**: 一条短信里的多个取件码都会被提取（start/end 与 regex 都支持），入库按 `(code, date)` 唯一索引去重
+- **规则回测**: 规则编辑页可以「用最近 30 天短信回测」，走的是同一个 `MatchEngine`（预览不套关键词筛选，回测会套）
 - **短信读取**: `SmsReader.kt` 通过 Android ContentResolver 查询 `content://sms/inbox`
 - **权限**: 只需要 `READ_SMS`（AndroidManifest.xml 已声明）
 

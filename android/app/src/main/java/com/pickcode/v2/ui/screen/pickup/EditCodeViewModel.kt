@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.pickcode.v2.data.datastore.SettingsDataStore
 import com.pickcode.v2.data.repository.PackageCodeRepository
+import com.pickcode.v2.domain.model.PackageCode
+import com.pickcode.v2.ui.util.todayString
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -29,6 +31,9 @@ class EditCodeViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val codeId: Long = savedStateHandle.get<Long>("codeId") ?: -1L
+
+    /** codeId <= 0 表示手动新增 */
+    val isNew: Boolean = codeId <= 0
     private val _uiState = MutableStateFlow(EditCodeUiState())
     val uiState: StateFlow<EditCodeUiState> = _uiState.asStateFlow()
 
@@ -88,23 +93,45 @@ class EditCodeViewModel @Inject constructor(
         }
     }
 
-    /** suspend：等写库真正完成再由页面 popBackStack，否则 viewModelScope 会随页面销毁被取消，编辑可能丢。 */
-    suspend fun save(): Boolean {
+    /**
+     * suspend：等写库真正完成再由页面 popBackStack，否则 viewModelScope 会随页面销毁被取消，编辑可能丢。
+     * 返回 null 表示成功，否则是要弹给用户的错误文案。
+     */
+    suspend fun save(): String? {
         val state = _uiState.value
-        if (state.code.isBlank()) return false
-        if (codeId > 0) {
-            repository.getById(codeId)?.let { existing ->
-                repository.update(
-                    existing.copy(
-                        code = state.code,
-                        company = state.company.ifEmpty { "手动添加" },
-                        tags = state.selectedTags,
-                        remark = state.remark,
-                        isPicked = state.isPicked
-                    )
+        val code = state.code.trim()
+        if (code.isEmpty()) return "请输入取件码"
+
+        if (isNew) {
+            val now = todayString()
+            val id = repository.insert(
+                PackageCode(
+                    code = code,
+                    date = now,
+                    sendDate = now,
+                    company = state.company.ifEmpty { "手动添加" },
+                    address = "手动添加",
+                    isManual = true,
+                    tags = state.selectedTags,
+                    remark = state.remark,
+                    isPicked = state.isPicked
                 )
-            }
+            )
+            // insert 返回 -1 说明今天已有同一个取件码
+            return if (id == -1L) "今天已经有这个取件码了" else null
         }
-        return true
+
+        repository.getById(codeId)?.let { existing ->
+            repository.update(
+                existing.copy(
+                    code = code,
+                    company = state.company.ifEmpty { "手动添加" },
+                    tags = state.selectedTags,
+                    remark = state.remark,
+                    isPicked = state.isPicked
+                )
+            )
+        }
+        return null
     }
 }

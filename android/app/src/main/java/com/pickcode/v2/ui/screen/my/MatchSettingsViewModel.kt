@@ -1,5 +1,7 @@
 package com.pickcode.v2.ui.screen.my
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.content.Context
 import android.widget.Toast
 import androidx.lifecycle.SavedStateHandle
@@ -8,14 +10,18 @@ import androidx.lifecycle.viewModelScope
 import com.pickcode.v2.data.datastore.SettingsDataStore
 import com.pickcode.v2.data.repository.MatchRuleRepository
 import com.pickcode.v2.domain.engine.MatchEngine
+import com.pickcode.v2.domain.engine.SmsReader
 import com.pickcode.v2.domain.model.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.*
 import java.text.SimpleDateFormat
 import java.util.*
@@ -31,6 +37,8 @@ data class MatchSettingsUiState(
     val fieldPatterns: Map<String, String> = mapOf("code" to "", "express" to "", "address" to ""),
     val matchResults: Map<String, String> = emptyMap(),
     val aiLoading: Boolean = false,
+    val backtestLoading: Boolean = false,
+    val backtest: BacktestResult? = null,
     val enabled: Boolean = true,
     val isEdit: Boolean = false
 ) {
@@ -39,12 +47,27 @@ data class MatchSettingsUiState(
     fun getFieldPattern(field: String) = fieldPatterns[field] ?: ""
 }
 
+/** 回测：这条规则在最近短信里的命中情况 */
+data class BacktestSample(
+    val sms: String,
+    val code: String,
+    val express: String,
+    val address: String
+)
+
+data class BacktestResult(
+    val scanned: Int,
+    val matched: Int,
+    val samples: List<BacktestSample>
+)
+
 @HiltViewModel
 class MatchSettingsViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repository: MatchRuleRepository,
     private val settingsDataStore: SettingsDataStore,
     private val matchEngine: MatchEngine,
+    private val smsReader: SmsReader,
     private val httpClient: HttpClient
 ) : ViewModel() {
 
@@ -102,29 +125,8 @@ class MatchSettingsViewModel @Inject constructor(
     /** 预览复用 MatchEngine，避免预览和实际匹配两套逻辑漂移。 */
     private fun updateMatchResults(state: MatchSettingsUiState): MatchSettingsUiState {
         if (state.smsContent.isBlank()) return state.copy(matchResults = emptyMap())
-        val rule = MatchRule(
-            id = "preview",
-            name = "preview",
-            matchType = state.matchType,
-            rules = RuleSet(
-                code = FieldConfig(
-                    start = state.getFieldStart("code"),
-                    end = state.getFieldEnd("code"),
-                    pattern = state.getFieldPattern("code")
-                ),
-                express = FieldConfig(
-                    start = state.getFieldStart("express"),
-                    end = state.getFieldEnd("express"),
-                    pattern = state.getFieldPattern("express")
-                ),
-                address = FieldConfig(
-                    start = state.getFieldStart("address"),
-                    end = state.getFieldEnd("address"),
-                    pattern = state.getFieldPattern("address")
-                )
-            ),
-            createTime = ""
-        )
+        // 预览不套关键词筛选：改字段时能立刻看到抽取结果
+        val rule = buildRule(state, id = "preview", includeKeyword = false)
         val info = matchEngine.extractInfo(state.smsContent, listOf(rule))
         return state.copy(
             matchResults = mapOf(
@@ -241,5 +243,85 @@ $smsContent"""
             repository.insert(rule)
         }
         return true
+    }
+
+    /** 把当前编辑器内容组装成一条 MatchRule，预览和回测共用同一份组装逻辑。 */
+    private fun buildRule(
+        state: MatchSettingsUiState,
+        id: String,
+        includeKeyword: Boolean
+    ) = MatchRule(
+        id = id,
+        name = state.ruleName.ifBlank { "未命名规则" },
+        matchType = state.matchType,
+        rules = RuleSet(
+            code = FieldConfig(
+                start = state.getFieldStart("code"),
+                end = state.getFieldEnd("code"),
+                pattern = state.getFieldPattern("code")
+            ),
+            express = FieldConfig(
+                start = state.getFieldStart("express"),
+                end = state.getFieldEnd("express"),
+                pattern = state.getFieldPattern("express")
+            ),
+            address = FieldConfig(
+                start = state.getFieldStart("address"),
+                end = state.getFieldEnd("address"),
+                pattern = state.getFieldPattern("address")
+            )
+        ),
+        createTime = "",
+        keyword = if (includeKeyword) state.keyword else ""
+    )
+
+    /**
+     * 拿最近 30 天的真实短信回测当前规则：命中多少条、前几条抽出来长什么样。
+     * 比单条预览更能说明「这条规则到底能不能用」。
+     */
+    fun runBacktest(context: Context) {
+        if (_uiState.value.backtestLoading) return
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_SMS)
+                != PackageManager.PERMISSION_GRANTED
+        ) {
+            Toast.makeText(context, "需要短信权限才能回测", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(backtestLoading = true) }
+            val result = withContext(Dispatchers.IO) {
+                runCatching {
+                    val rule = buildRule(_uiState.value, id = "backtest", includeKeyword = true)
+                    val messages = smsReader.readRecentSms(30)
+                    val samples = mutableListOf<BacktestSample>()
+                    var matched = 0
+                    for (msg in messages) {
+                        val info = matchEngine.extractInfo(msg.content, listOf(rule))
+                        if (info.codes.isEmpty()) continue
+                        matched++
+                        if (samples.size < 5) {
+                            samples.add(
+                                BacktestSample(
+                                    sms = msg.content.replace("\n", " ").take(60),
+                                    code = info.codes.joinToString(", "),
+                                    express = info.express,
+                                    address = info.address
+                                )
+                            )
+                        }
+                    }
+                    BacktestResult(scanned = messages.size, matched = matched, samples = samples)
+                }
+            }
+            _uiState.update { it.copy(backtestLoading = false, backtest = result.getOrNull()) }
+            result.exceptionOrNull()?.let {
+                Toast.makeText(context, "回测失败: ${it.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
+    fun dismissBacktest() {
+        _uiState.update { it.copy(backtest = null) }
     }
 }

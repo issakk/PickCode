@@ -29,7 +29,10 @@ fun EditCodeScreen(
     val scope = rememberCoroutineScope()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        AppTopBar(title = "编辑取件码", onBack = { navController.popBackStack() })
+        AppTopBar(
+            title = if (viewModel.isNew) "添加取件码" else "编辑取件码",
+            onBack = { navController.popBackStack() }
+        )
 
         Column(
             modifier = Modifier
@@ -117,10 +120,11 @@ fun EditCodeScreen(
             Button(
                 onClick = {
                     scope.launch {
-                        if (viewModel.save()) {
+                        val error = viewModel.save()
+                        if (error == null) {
                             navController.popBackStack()
                         } else {
-                            Toast.makeText(context, "请输入取件码", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
                         }
                     }
                 },

@@ -136,6 +136,20 @@ fun MatchSettingsScreen(
                 }
             }
 
+            // 用真实短信回测这条规则（含关键词筛选）
+            OutlinedButton(
+                onClick = { viewModel.runBacktest(context) },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp),
+                enabled = !uiState.backtestLoading
+            ) {
+                if (uiState.backtestLoading) {
+                    CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text("用最近 30 天短信回测")
+            }
+
             // AI generate button
             if (uiState.matchType == "regex") {
                 OutlinedButton(
@@ -163,6 +177,55 @@ fun MatchSettingsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("保存规则", modifier = Modifier.padding(vertical = 4.dp))
+            }
+        }
+    }
+    uiState.backtest?.let { result ->
+        ModalBottomSheet(onDismissRequest = { viewModel.dismissBacktest() }) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                Text("回测结果", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = if (result.scanned == 0) {
+                        "读不到最近 30 天的短信（可能是没给短信权限）"
+                    } else {
+                        "扫了 ${result.scanned} 条短信，命中 ${result.matched} 条"
+                    },
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                if (result.scanned > 0 && result.matched == 0) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "一条都没命中，检查一下头尾文本/正则，或关键词是不是写窄了",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = colorScheme.error
+                    )
+                }
+                result.samples.forEach { sample ->
+                    Spacer(Modifier.height(12.dp))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = colorScheme.surfaceVariant
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            Text("取件码：${sample.code}", style = MaterialTheme.typography.titleSmall)
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = "快递：${sample.express.ifEmpty { "—" }}　地址：${sample.address.ifEmpty { "—" }}",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = sample.sms,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = colorScheme.outline
+                            )
+                        }
+                    }
+                }
+                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.navigationBarsPadding())
             }
         }
     }

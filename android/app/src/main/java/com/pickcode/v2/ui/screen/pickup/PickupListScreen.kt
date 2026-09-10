@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.outlined.AllInbox
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.LocationOn
@@ -81,13 +82,21 @@ fun PickupListScreen(
     Box(modifier = Modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
             LargeTitleHeader(title = "取件码") {
-                if (uiState.codes.isNotEmpty()) {
-                    Box {
-                        IconButton(onClick = { menuOpen = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "更多操作")
-                        }
-                        if (menuOpen) {
-                            DropdownMenu(expanded = true, onDismissRequest = { menuOpen = false }) {
+                Box {
+                    IconButton(onClick = { menuOpen = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "更多操作")
+                    }
+                    if (menuOpen) {
+                        DropdownMenu(expanded = true, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(
+                                text = { Text("手动添加") },
+                                leadingIcon = { Icon(Icons.Default.Add, contentDescription = null) },
+                                onClick = {
+                                    menuOpen = false
+                                    rootNavController.navigate(Routes.editCode(0))
+                                }
+                            )
+                            if (uiState.codes.isNotEmpty()) {
                                 DropdownMenuItem(
                                     text = { Text("全部删除", color = colorScheme.error) },
                                     leadingIcon = {
@@ -114,7 +123,7 @@ fun PickupListScreen(
 
             val flatItems = uiState.flatItems
             if (flatItems.isEmpty() && !uiState.isLoading) {
-                EmptyPickupState()
+                EmptyPickupState(onManualAdd = { rootNavController.navigate(Routes.editCode(0)) })
             } else {
                 LazyColumn(
                     state = listState,
@@ -223,7 +232,7 @@ fun PickupListScreen(
 }
 
 @Composable
-private fun EmptyPickupState() {
+private fun EmptyPickupState(onManualAdd: () -> Unit) {
     val colorScheme = MaterialTheme.colorScheme
     Column(
         modifier = Modifier
@@ -254,6 +263,10 @@ private fun EmptyPickupState() {
             color = colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+        Spacer(Modifier.height(8.dp))
+        TextButton(onClick = onManualAdd) {
+            Text("手动添加一个")
+        }
     }
 }
 

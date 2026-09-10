@@ -6,10 +6,8 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.pickcode.v2.data.repository.MatchRuleRepository
 import com.pickcode.v2.data.repository.PackageCodeRepository
-import com.pickcode.v2.domain.engine.MatchEngine
-import com.pickcode.v2.domain.engine.SmsReader
+import com.pickcode.v2.domain.engine.CodeImporter
 import com.pickcode.v2.domain.model.PackageCode
 import com.pickcode.v2.ui.util.formatDateChinese
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -39,18 +37,10 @@ data class PickupListUiState(
     val isLoading: Boolean = false
 )
 
-private sealed interface MatchOutcome {
-    data object NoRules : MatchOutcome
-    data class Failed(val message: String) : MatchOutcome
-    data class Done(val addedCount: Int) : MatchOutcome
-}
-
 @HiltViewModel
 class PickupListViewModel @Inject constructor(
     private val repository: PackageCodeRepository,
-    private val matchRuleRepository: MatchRuleRepository,
-    private val matchEngine: MatchEngine,
-    private val smsReader: SmsReader
+    private val codeImporter: CodeImporter
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(PickupListUiState())
@@ -135,58 +125,32 @@ class PickupListViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             // 读短信 + 跑正则 + 入库全部丢到 IO 线程，避免正则回溯卡住主线程
-            val outcome = withContext(Dispatchers.IO) { matchSms() }
+            val result = withContext(Dispatchers.IO) {
+                runCatching { codeImporter.importFromSms(4) }
+            }
             _uiState.update { it.copy(isLoading = false) }
 
-            when (outcome) {
-                is MatchOutcome.NoRules ->
-                    Toast.makeText(context, "请先添加匹配规则", Toast.LENGTH_SHORT).show()
+            result.fold(
+                onSuccess = { outcome ->
+                    when (outcome) {
+                        is CodeImporter.Outcome.NoRules ->
+                            Toast.makeText(context, "请先添加匹配规则", Toast.LENGTH_SHORT).show()
 
-                is MatchOutcome.Failed ->
-                    Toast.makeText(context, "读取短信失败: ${outcome.message}", Toast.LENGTH_SHORT).show()
-
-                is MatchOutcome.Done -> {
-                    refresh()
-                    Toast.makeText(
-                        context,
-                        if (outcome.addedCount > 0) "匹配到 ${outcome.addedCount} 个取件码" else "暂无匹配结果",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    if (outcome.addedCount > 0) onSuccess()
+                        is CodeImporter.Outcome.Done -> {
+                            refresh()
+                            Toast.makeText(
+                                context,
+                                if (outcome.addedCount > 0) "匹配到 ${outcome.addedCount} 个取件码" else "暂无匹配结果",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            if (outcome.addedCount > 0) onSuccess()
+                        }
+                    }
+                },
+                onFailure = { e ->
+                    Toast.makeText(context, "读取短信失败: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
-            }
+            )
         }
-    }
-
-    private suspend fun matchSms(): MatchOutcome = try {
-        val rules = matchRuleRepository.getEnabled()
-        if (rules.isEmpty()) {
-            MatchOutcome.NoRules
-        } else {
-            val messages = smsReader.readRecentSms(4)
-            // (code, date) 去重：唯一索引兜底，这里只是省掉无用的 insert
-            val seen = _uiState.value.codes.mapTo(mutableSetOf()) { it.code to it.date }
-            var added = 0
-            for (msg in messages) {
-                val info = matchEngine.extractInfo(msg.content, rules)
-                for (code in info.codes) {
-                    if (code.isEmpty() || !seen.add(code to msg.sendDate)) continue
-                    val id = repository.insert(
-                        PackageCode(
-                            code = code,
-                            date = msg.sendDate,
-                            sendDate = msg.sendDate,
-                            company = info.express.ifEmpty { "未知快递" },
-                            address = info.address.ifEmpty { "未知地址" },
-                            isManual = false
-                        )
-                    )
-                    if (id != -1L) added++ // -1 = 被唯一索引拦下的重复入库
-                }
-            }
-            MatchOutcome.Done(added)
-        }
-    } catch (e: Exception) {
-        MatchOutcome.Failed(e.message ?: "未知错误")
     }
 }

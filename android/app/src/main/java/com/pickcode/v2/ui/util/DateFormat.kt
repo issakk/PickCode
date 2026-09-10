@@ -17,3 +17,9 @@ fun formatDateChinese(dateStr: String): String {
         dateStr
     }
 }
+
+/** 当前时刻，"yyyy-MM-dd HH:mm:ss"（入库用） */
+fun todayString(): String {
+    val sdf = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+    return sdf.format(Date())
+}
