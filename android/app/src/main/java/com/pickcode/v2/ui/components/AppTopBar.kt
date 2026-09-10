@@ -2,7 +2,6 @@ package com.pickcode.v2.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -55,7 +54,7 @@ fun AppTopBar(
 
 /**
  * 首页（底部 Tab）用的大标题头，对齐 Google 原生 App 的观感：
- * 背景色 + 24sp 标题 + 右侧图标操作，系统栏内容自己处理 inset。
+ * 背景色 + 24sp 标题 + 右侧图标操作；顶部 inset 由 MainScreen 的 Scaffold 让出。
  */
 @Composable
 fun LargeTitleHeader(
@@ -80,7 +79,8 @@ fun LargeTitleHeader(
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f)
             )
-            Box { actions() }
+            // 直接在 Row 作用域里调用，不能包一层 Box（BoxScope 会挡住 RowScope 的隐式接收者）
+            actions()
         }
     }
 }
