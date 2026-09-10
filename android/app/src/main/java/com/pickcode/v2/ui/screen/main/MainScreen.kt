@@ -33,7 +33,8 @@ fun MainScreen(rootNavController: NavHostController) {
     Scaffold(
         bottomBar = {
             NavigationBar(
-                tonalElevation = 0.dp
+                tonalElevation = 0.dp,
+                containerColor = MaterialTheme.colorScheme.surface
             ) {
                 BottomTab.entries.forEach { tab ->
                     val selected = currentRoute == tab.route
@@ -49,7 +50,7 @@ fun MainScreen(rootNavController: NavHostController) {
                             }
                         },
                         icon = { Icon(tab.icon, contentDescription = tab.label) },
-                        label = { Text(tab.label, fontSize = 11.sp) }
+                        label = { Text(tab.label, style = MaterialTheme.typography.labelMedium) }
                     )
                 }
             }

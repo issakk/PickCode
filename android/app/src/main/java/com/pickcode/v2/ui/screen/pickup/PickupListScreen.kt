@@ -7,21 +7,20 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AllInbox
 import androidx.compose.material.icons.outlined.DeleteSweep
+import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -48,6 +47,7 @@ fun PickupListScreen(
         viewModel.reload()
         onPauseOrDispose { }
     }
+
     var showDeleteDialog by remember { mutableStateOf<PackageCode?>(null) }
     var showDateDeleteDialog by remember { mutableStateOf<String?>(null) }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
@@ -82,51 +82,57 @@ fun PickupListScreen(
                 }
             }
             IconButton(onClick = { requestSmsAndMatch() }) {
-                Icon(Icons.Outlined.Refresh, contentDescription = "自动匹配")
+                Icon(Icons.Outlined.Refresh, contentDescription = "扫描短信匹配")
             }
         }
 
         if (uiState.isLoading) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp))
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
         }
 
         val flatItems = uiState.flatItems
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            items(
-                items = flatItems,
-                key = { item ->
+        if (flatItems.isEmpty() && !uiState.isLoading) {
+            EmptyPickupState(onScan = { requestSmsAndMatch() })
+        } else {
+            LazyColumn(
+                state = listState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(
+                    items = flatItems,
+                    key = { item ->
+                        when (item) {
+                            is PickupListItem.DateHeader -> "date_${item.date}"
+                            is PickupListItem.AddressHeader -> "addr_${item.date}_${item.address}"
+                            is PickupListItem.Code -> "code_${item.item.id}"
+                        }
+                    },
+                    contentType = { item -> item::class }
+                ) { item ->
                     when (item) {
-                        is PickupListItem.DateHeader -> "date_${item.date}"
-                        is PickupListItem.AddressHeader -> "addr_${item.date}_${item.address}"
-                        is PickupListItem.Code -> "code_${item.item.id}"
-                    }
-                },
-                contentType = { item -> item::class }
-            ) { item ->
-                when (item) {
-                    is PickupListItem.DateHeader -> DateHeaderItem(
-                        date = item.date,
-                        pendingCount = item.pendingCount,
-                        onDelete = { showDateDeleteDialog = item.date },
-                        colorScheme = colorScheme
-                    )
-                    is PickupListItem.AddressHeader -> AddressHeaderItem(
-                        address = item.address,
-                        colorScheme = colorScheme
-                    )
-                    is PickupListItem.Code -> {
-                        val code = item.item
-                        CodeCard(
-                            item = code,
-                            onTogglePicked = remember(code) { { viewModel.togglePicked(code) } },
-                            onEdit = remember(code) { { rootNavController.navigate(Routes.editCode(code.id)) } },
-                            onDelete = remember(code) { { showDeleteDialog = code } }
+                        is PickupListItem.DateHeader -> DateHeaderItem(
+                            date = item.date,
+                            pendingCount = item.pendingCount,
+                            onDelete = { showDateDeleteDialog = item.date },
+                            colorScheme = colorScheme
                         )
+
+                        is PickupListItem.AddressHeader -> AddressHeaderItem(
+                            address = item.address,
+                            colorScheme = colorScheme
+                        )
+
+                        is PickupListItem.Code -> {
+                            val code = item.item
+                            CodeCard(
+                                item = code,
+                                onTogglePicked = remember(code) { { viewModel.togglePicked(code) } },
+                                onEdit = remember(code) { { rootNavController.navigate(Routes.editCode(code.id)) } },
+                                onDelete = remember(code) { { showDeleteDialog = code } }
+                            )
+                        }
                     }
                 }
             }
@@ -184,6 +190,40 @@ fun PickupListScreen(
 }
 
 @Composable
+private fun EmptyPickupState(onScan: () -> Unit) {
+    val colorScheme = MaterialTheme.colorScheme
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 40.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            Icons.Outlined.AllInbox,
+            contentDescription = null,
+            tint = colorScheme.outline,
+            modifier = Modifier.size(56.dp)
+        )
+        Spacer(Modifier.height(16.dp))
+        Text("还没有取件码", style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = "扫描最近 4 天的短信，按规则自动提取取件码",
+            style = MaterialTheme.typography.bodySmall,
+            color = colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center
+        )
+        Spacer(Modifier.height(24.dp))
+        Button(onClick = onScan, shape = MaterialTheme.shapes.small) {
+            Icon(Icons.Outlined.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("扫描短信")
+        }
+    }
+}
+
+@Composable
 private fun DateHeaderItem(
     date: String,
     pendingCount: Int,
@@ -193,28 +233,25 @@ private fun DateHeaderItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(top = 8.dp, bottom = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = date,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = colorScheme.onSurfaceVariant,
-            letterSpacing = 0.5.sp,
+            style = MaterialTheme.typography.titleSmall,
+            color = colorScheme.onSurface,
             modifier = Modifier.weight(1f)
         )
         if (pendingCount > 0) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = colorScheme.primary.copy(alpha = 0.1f)
+                shape = MaterialTheme.shapes.extraSmall,
+                color = colorScheme.primaryContainer
             ) {
                 Text(
                     text = "$pendingCount 个待取",
-                    fontSize = 11.sp,
-                    color = colorScheme.primary,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                    style = MaterialTheme.typography.labelSmall,
+                    color = colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
                 )
             }
         }
@@ -222,7 +259,7 @@ private fun DateHeaderItem(
             Icon(
                 Icons.Outlined.DeleteSweep,
                 contentDescription = "删除当日",
-                tint = colorScheme.error,
+                tint = colorScheme.outline,
                 modifier = Modifier.size(16.dp)
             )
         }
@@ -234,10 +271,22 @@ private fun AddressHeaderItem(
     address: String,
     colorScheme: ColorScheme
 ) {
-    Text(
-        text = address,
-        fontSize = 13.sp,
-        color = colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 4.dp, top = 4.dp)
-    )
+    Row(
+        modifier = Modifier.padding(start = 4.dp, top = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            Icons.Outlined.LocationOn,
+            contentDescription = null,
+            tint = colorScheme.outline,
+            modifier = Modifier.size(14.dp)
+        )
+        Spacer(Modifier.width(4.dp))
+        Text(
+            text = address,
+            style = MaterialTheme.typography.labelMedium,
+            color = colorScheme.onSurfaceVariant,
+            maxLines = 1
+        )
+    }
 }

@@ -46,7 +46,7 @@ android/app/src/main/java/com/pickcode/v2/
 │   │   ├── pickup/     # 取件码列表 + 编辑
 │   │   └── my/         # 我的：匹配规则、AI 设置、FAQ、关于、更新日志
 │   ├── components/     # 公共组件 (CodeCard、TagGrid、GradientHeader)
-│   ├── theme/          # Material 3 主题 (Color、Type、Theme)
+│   ├── theme/          # Material 3 主题 (Color、Theme)，字体样式用 M3 默认
 │   └── util/           # 工具类 (DateFormat、CodeFormat)
 ├── MainActivity.kt
 └── PickCodeApp.kt      # Application 入口 (@HiltAndroidApp)
@@ -86,7 +86,9 @@ android/app/src/main/java/com/pickcode/v2/
 
 ## Key Conventions
 
-- **样式**: Material 3 Design System，主题色蓝色 (`#0052d9`)，组件使用 `MaterialTheme.colorScheme`
+- **样式**: Material 3 Design System，品牌色蓝→紫 (渐变头 `GradientHeader`)，组件一律用 `MaterialTheme.colorScheme` / `.typography` / `.shapes`，不要在页面里硬编码字号和圆角
+- **顶部栏**: 所有页面统一用 `ui/components/GradientHeader.kt`（品牌渐变 + 白字，渐变铺到状态栏下），不要另写 TopAppBar 或自定义 header
+- **系统栏/键盘**: MainActivity 已 `enableEdgeToEdge()`；列表页的底部间距由 `MainScreen` 的 Scaffold 负责，独立全屏页（EditCode、MatchSettings、AiSettings、About、Faq、Changelog）必须自己加 `navigationBarsPadding()`，有输入框的还要 `imePadding()`
 - **Compose**: 所有 UI 使用 Jetpack Compose，无 XML 布局
 - **ViewModel**: 每个 Screen 对应一个 ViewModel，通过 `hiltViewModel()` 注入
 - **协程**: 所有异步操作使用 Kotlin Coroutines + Flow

@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.pickcode.v2.ui.components.GradientHeader
-import com.pickcode.v2.ui.theme.success
+import com.pickcode.v2.ui.theme.successColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +32,9 @@ fun MatchSettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(16.dp)
+                .navigationBarsPadding()
+                .imePadding(),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             // Rule name
@@ -126,7 +128,7 @@ fun MatchSettingsScreen(
                             Text(
                                 text = if (result.isNotEmpty()) "匹配结果: $result" else "未匹配到",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (result.isNotEmpty()) colorScheme.success else colorScheme.error,
+                                color = if (result.isNotEmpty()) successColor() else colorScheme.error,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }

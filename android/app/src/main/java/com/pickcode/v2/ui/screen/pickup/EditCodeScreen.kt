@@ -35,7 +35,9 @@ fun EditCodeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(16.dp)
+                .navigationBarsPadding()
+                .imePadding(),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Code field
@@ -77,6 +79,11 @@ fun EditCodeScreen(
                     singleLine = true,
                     shape = RoundedCornerShape(8.dp)
                 )
+            Text(
+                text = "长按标签可删除",
+                style = MaterialTheme.typography.labelSmall,
+                color = colorScheme.outline
+            )
                 Spacer(Modifier.width(8.dp))
                 Button(onClick = { viewModel.addCustomTag() }) {
                     Text("添加")
@@ -117,7 +124,8 @@ fun EditCodeScreen(
                         }
                     }
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                shape = MaterialTheme.shapes.small
             ) {
                 Text("保存", modifier = Modifier.padding(vertical = 4.dp))
             }
